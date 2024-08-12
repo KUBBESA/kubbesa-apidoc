@@ -10,6 +10,9 @@ servers:
   #   description: Servidor Staging
 
 info:
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0
   description: |
     # Introducción
     Este API esta docoumentado en formato **OpenAPI** desarrollado por el equipo de desarrollo de [Crediviva](https://crediviva.com.pa).
@@ -19,9 +22,9 @@ info:
 
     Crediviva ofrece la siguiente forma de autenticación:
       - API Key
+      - Bearer JWT Token
 
     <!-- ReDoc-Inject: <security-definitions> -->
-
   version: 1.0.0
   title: Crediviva
   contact:
@@ -126,8 +129,8 @@ paths:
             schema:
               $ref: "#/components/schemas/Get_Balance"
       security:
-        - api_key:
-            - ""
+        - defaultApiKey:
+            - "/api-caja/get-balance:read"
       responses:
         "200":
           description: Operación exitosa
@@ -172,11 +175,17 @@ paths:
       description: Obtiene la lista de métodos de pago disponibles
       operationId: get-payment-methods
       security:
-        - api_key:
-            - ""
+        - defaultApiKey:
+            - "/api-caja/get-payment-methods:read"
       responses:
         "200":
           description: Operación exitosa
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GetPaymentMethods"
+        "400":
+          description: No se ha proporcionado los parametros correspondientes
           content:
             application/json:
               schema:
@@ -200,8 +209,8 @@ paths:
             schema:
               $ref: "#/components/schemas/Make_Payment"
       security:
-        - api_key:
-            - ""
+        - defaultApiKey:
+            - "/api-caja/make-payment:write"
       responses:
         "200":
           description: Operación exitosa
@@ -254,17 +263,18 @@ paths:
         - PUNTO PAGO
       summary: Obtener saldo del cliente
       description: Obtiene el saldo asociado al cliente
-      operationId: get-balance
+      operationId: get-balance-punto-pago
       requestBody:
         content:
           application/json:
             schema:
               $ref: "#/components/schemas/Get_Balance_Punto_Pago"
       security:
-        - api_key:
-            - ""
+        - defaultApiKey:
+            - /integrations/payment/get-balance/punto-pago:read
       responses:
         "200":
+          description: Operación exitosa
           content:
             application/json:
               schema:
@@ -283,17 +293,18 @@ paths:
         - PUNTO PAGO
       summary: Realizar un pago
       description: Procesa un pago asociado al cliente
-      operationId: make-payment
+      operationId: make-payment-punto-pago
       requestBody:
         content:
           application/json:
             schema:
               $ref: "#/components/schemas/Make_Payment_Punto_Pago"
       security:
-        - api_key:
-            - ""
+        - defaultApiKey:
+            - /integrations/payment/make-payment/punto-pago:write
       responses:
         "200":
+          description: Operación exitosa
           content:
             application/json:
               schema:
@@ -312,7 +323,7 @@ paths:
   /pull/create-qr:
     post:
       tags:
-        -  PULL
+        - PULL
       summary: Generar código QR
       description: Genera el código qr que será escaneado por el cliente
       operationId: create-qr-code
@@ -322,8 +333,8 @@ paths:
             schema:
               $ref: "#/components/schemas/Create_Qr_Code"
       security:
-        - api_key:
-            - ""
+        - bearerHttpAuthentication:
+            - "/pull/create-qr:write"
       responses:
         "200":
           description: Operación exitosa
@@ -378,8 +389,8 @@ paths:
             schema:
               $ref: "#/components/schemas/Get_Info_Qr"
       security:
-        - api_key:
-            - ""
+        - bearerHttpAuthentication:
+            - "/pull/get-info-qr:read"
       responses:
         "200":
           description: Operación exitosa
@@ -426,8 +437,8 @@ paths:
             schema:
               $ref: "#/components/schemas/Cancel_Qr"
       security:
-        - api_key:
-            - ""
+        - bearerHttpAuthentication:
+            - "/pull/cancel-qr:write"
       responses:
         "200":
           description: Operación exitosa
@@ -461,6 +472,60 @@ paths:
                 oneOf:
                   - $ref: "#/components/schemas/CancelQrErrorConnectingDb"
                   - $ref: "#/components/schemas/CancelQrErrorCancellingQR"
+  /pull/cancel-credit:
+    post:
+      tags:
+        - PULL
+      summary: Cancelar crédito
+      description: Cancela el crédito activado asociado a la transacción
+      operationId: cancel-credit-pull
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Cancel_Credit"
+      security:
+        - bearerHttpAuthentication:
+            - "/pull/cancel-credit:write"
+      responses:
+        "200":
+          description: Operación exitosa
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CancelCredit"
+        "400":
+          description: No se ha proporcionado los parametros correspondientes
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CancelCreditNoParameters"
+        "403":
+          description: Sin permisos para acceder al recurso
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CancelCreditForbidden"
+        "404":
+          description: Recurso no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CancelCreditNotFound"
+        "409":
+          description: Crédito no puede ser cancelado
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/CancelCreditNotActive"
+                  - $ref: "#/components/schemas/CancelCreditHasPayments"
+        "500":
+          description: Error al cancelar la transacción
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CancelCreditErrorCancellingCredit"
   /red-digital/create-qr:
     post:
       tags:
@@ -474,8 +539,8 @@ paths:
             schema:
               $ref: "#/components/schemas/Create_Qr_Code_Red_Digital"
       security:
-        - api_key:
-            - ""
+        - defaultApiKey:
+            - "/red-digital/create-qr:write"
       responses:
         "200":
           description: Operación exitosa
@@ -594,8 +659,8 @@ paths:
         "500":
           description: Error de Servidor
       security:
-        - api_key:
-            - "leer: solicitudes de crédito"
+        - bearerHttpAuthentication:
+            - /creditapplications:read
   "/creditapplications/{id}":
     get:
       tags:
@@ -635,8 +700,8 @@ paths:
         "404":
           description: Usuario no encontrado
       security:
-        - api_key:
-            - "leer: solicitudes de crédito"
+        - bearerHttpAuthentication:
+            - /creditapplications/{id}:read
   /qr:
     post:
       tags:
@@ -664,9 +729,9 @@ paths:
         "500":
           description: Error de Servidor
       security:
-        - api_key:
-            - "leer: desembolso"
-            - "escribir: desembolso"
+        - bearerHttpAuthentication:
+            - /qr:read
+
   /qr/cancel:
     post:
       operationId: cancel-qr
@@ -694,8 +759,8 @@ paths:
         "500":
           description: Error de Servidor
       security:
-        - api_key:
-            - "escritura: cancelar desembolso"
+        - bearerHttpAuthentication:
+            - /qr/cancel:write
   /qr/status:
     get:
       tags:
@@ -726,9 +791,8 @@ paths:
         "500":
           description: Error de Servidor
       security:
-        - api_key:
-            - "leer: desembolso"
-            - "escribir: desembolso"
+        - bearerHttpAuthentication:
+            - /qr/status:read
   /invoice:
     post:
       tags:
@@ -752,9 +816,8 @@ paths:
         "500":
           description: Error de Servidor
       security:
-        - api_key:
-            - "leer: desembolso"
-            - "escribir: desembolso"
+        - bearerHttpAuthentication:
+            - /invoice:write
   /integrations/e-commerce/orders:
     post:
       tags:
@@ -796,8 +859,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/eCommerceOrdersResponse500"
       security:
-        - API-Key:
-            - "Escritura: Crear una orden"
+        - defaultApiKey:
+            - /integrations/e-commerce/orders:write
   /integrations/e-commerce/orders/cancel:
     post:
       tags:
@@ -845,8 +908,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/eCommerceOrdersResponse500"
       security:
-        - API-Key:
-            - "Escritura: Cancelar una orden"
+        - defaultApiKey:
+            - /integrations/e-commerce/orders/cancel:write
   /integrations/e-commerce/orders/status:
     post:
       tags:
@@ -894,8 +957,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/eCommerceOrdersResponse500"
       security:
-        - API-Key:
-            - "Lectura: Ver Estado de una orden"
+        - defaultApiKey:
+            - /integrations/e-commerce/orders/status:read
 components:
   schemas:
     qrResponse:
@@ -1002,7 +1065,7 @@ components:
         statusCode:
           type: number
           description: "Código devuelto por el servicio"
-          example: 200      
+          example: 200
         loanId:
           type: number
           description: Identificador único del crédito
@@ -1036,7 +1099,7 @@ components:
         statusCode:
           type: number
           description: "Código devuelto por el servicio"
-          example: 200      
+          example: 200
         message:
           type: string
           example: "Credit fully paid"
@@ -1224,7 +1287,7 @@ components:
         statusCode:
           type: number
           description: "Código devuelto por el servicio"
-          example: 200     
+          example: 200
         payment_date:
           type: string
           example: "12/28/2023, 9:47:58 a. m."
@@ -1354,7 +1417,7 @@ components:
         statusCode:
           type: number
           description: "Código devuelto por el servicio"
-          example: 400      
+          example: 400
         message:
           type: string
           example: "Missing parameters: parameters"
@@ -1365,7 +1428,7 @@ components:
         statusCode:
           type: number
           description: "Código devuelto por el servicio"
-          example: 403      
+          example: 403
         message:
           type: string
           example: "Forbidden"
@@ -1376,7 +1439,7 @@ components:
         statusCode:
           type: number
           description: "Código devuelto por el servicio"
-          example: 404      
+          example: 404
         message:
           type: string
           example: "User not found"
@@ -1387,7 +1450,7 @@ components:
         statusCode:
           type: number
           description: "Código devuelto por el servicio"
-          example: 404      
+          example: 404
         message:
           type: string
           example: "Credit not found"
@@ -1398,7 +1461,7 @@ components:
         statusCode:
           type: number
           description: "Código devuelto por el servicio"
-          example: 500      
+          example: 500
         message:
           type: string
           example: "Error getting receipt"
@@ -1409,7 +1472,7 @@ components:
         statusCode:
           type: number
           description: "Código devuelto por el servicio"
-          example: 500      
+          example: 500
         message:
           type: string
           example: "Error sending email"
@@ -1420,7 +1483,7 @@ components:
         statusCode:
           type: number
           description: "Código devuelto por el servicio"
-          example: 500      
+          example: 500
         message:
           type: string
           example: "Error making payment"
@@ -1431,7 +1494,7 @@ components:
         statusCode:
           type: number
           description: "Código devuelto por el servicio"
-          example: 500      
+          example: 500
         message:
           type: string
           example: "Error getting transaction"
@@ -1442,7 +1505,7 @@ components:
         statusCode:
           type: number
           description: "Código devuelto por el servicio"
-          example: 500      
+          example: 500
         message:
           type: string
           example: "Error when connecting db"
@@ -1453,7 +1516,7 @@ components:
         statusCode:
           type: number
           description: "Código devuelto por el servicio"
-          example: 422      
+          example: 422
         message:
           type: string
           example: "Transaction amount must be greater than zero"
@@ -1570,7 +1633,7 @@ components:
           example: "Transaction amount must be greater than zero"
     GetInfoQr:
       type: object
-      description: Respuesta para obtener información de un código QR
+      description: Respuesta para obtener información de un código QR. La información de comisión aparecerá solo si el código QR ha sido consumido y aceptado por el cliente final.
       properties:
         dataQR:
           type: number
@@ -1625,6 +1688,21 @@ components:
           type: string
           example: "Comercio con crédito parcial inhabilitado"
           description: Información adicional del desembolso
+        commissionInfo:
+          type: object
+          properties:
+            installmentsPlanInMonths:
+              type: number
+              example: 12
+              description: Plazo de cuotas en meses
+            commissionAmount:
+              type: number
+              example: 10.35
+              description: Monto de comisión
+            commissionPercentage:
+              type: string
+              example: "7.35%"
+              description: Porcentaje de comisión
         createdAt:
           type: string
           example: "2024-02-14T12:00:00Z"
@@ -1710,6 +1788,70 @@ components:
         message:
           type: string
           example: "Error cancelling QR"
+    CancelCredit:
+      type: object
+      description: Sin Header
+      properties:
+        transactionId:
+          type: string
+          example: "64cb0b3030b6e6d24b613553"
+        message:
+          type: string
+          example: "Transacción anulada exitosamente"
+    CancelCreditNoParameters:
+      type: object
+      description: Sin Header
+      properties:
+        message:
+          type: string
+          example: "Parameters no encontrados: transactionId"
+    CancelCreditForbidden:
+      type: object
+      description: Sin Header
+      properties:
+        message:
+          type: string
+          example: "Forbidden"
+    CancelCreditNotFound:
+      type: object
+      description: Sin Header
+      properties:
+        transactionId:
+          type: string
+          example: "64cb0b3030b6e6d24b613553"
+        message:
+          type: string
+          example: "Transacción no encontrada"
+    CancelCreditNotActive:
+      type: object
+      description: Sin Header
+      properties:
+        transactionId:
+          type: string
+          example: "64cb0b3030b6e6d24b613553"
+        message:
+          type: string
+          example: "El crédito asociado a la transacción no se encuentra en estado activo"
+    CancelCreditHasPayments:
+      type: object
+      description: Sin Header
+      properties:
+        transactionId:
+          type: string
+          example: "64cb0b3030b6e6d24b613553"
+        message:
+          type: string
+          example: "El crédito asociado a la transacción tiene pagos realizados"
+    CancelCreditErrorCancellingCredit:
+      type: object
+      description: Sin Header
+      properties:
+        transactionId:
+          type: string
+          example: "64cb0b3030b6e6d24b613553"
+        message:
+          type: string
+          example: "Error al cancelar el crédito asociado a la transacción"
     AuthNoHeader:
       type: object
       description: Sin Header
@@ -1858,6 +2000,14 @@ components:
         dataQR:
           type: number
           description: "Código del QR generado"
+    Cancel_Credit:
+      type: object
+      required:
+        - transactionId
+      properties:
+        transactionId:
+          type: string
+          description: "ID de transaction del crédito"
     Credit_Application:
       type: object
       discriminator:
@@ -2141,21 +2291,15 @@ components:
             title: "title rb disb"
             $ref: "#/components/schemas/Invoice"
   securitySchemes:
-    Bearer:
-      type: apiKey
-      name: Authorization
-      in: header
+    bearerHttpAuthentication:
+      type: http
+      scheme: Bearer
+      bearerFormat: JWT
       description: >-
-        Para este ejemplo, puedes utilizar el `special-Key` el cual te concede de la autenticación necesaria para consumir los recursos expuestos para las operaciones descritas en el API.
-    api_key:
+        `JWT` Token en el header `Authorization`, el cual concede de la autenticación necesaria para consumir los recursos expuestos para las operaciones descritas en el API que utilicen este método de autenticación.
+    defaultApiKey:
       description: >
-        Para este ejemplo, puedes utilizar el `special-Key` el cual te concede de la autenticación necesaria para consumir los recursos expuestos para las operaciones descritas en el API.
-      type: apiKey
-      name: Authorization
-      in: header
-    API-Key:
-      description: >
-        API-Key suministrado por Crediviva
+        API-Key suministrado por Crediviva, el cual concede de la autenticación necesaria para consumir los recursos expuestos para las operaciones descritas en el API que utilicen este método de autenticación.
       type: apiKey
       name: x-api-key
       in: header
