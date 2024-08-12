@@ -1690,6 +1690,7 @@ components:
           description: Información adicional del desembolso
         commissionInfo:
           type: object
+          description: La información de comisión aparecerá solo si el código QR ha sido consumido y aceptado por el cliente final.
           properties:
             installmentsPlanInMonths:
               type: number
