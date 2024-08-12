@@ -1805,7 +1805,7 @@ components:
       properties:
         message:
           type: string
-          example: "Parameters no encontrados: transactionId"
+          example: "Parametros no encontrados: transactionId"
     CancelCreditForbidden:
       type: object
       description: Sin Header
