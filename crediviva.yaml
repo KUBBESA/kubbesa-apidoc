@@ -1072,7 +1072,7 @@ components:
         installmentNumber:
           type: number
           description: Plazo correspondiente a la cuota
-        monthlyInstallment:
+        biweeklyInstallment:
           type: number
           description: Monto inicial de la cuota
         amountPaid:
@@ -1081,7 +1081,7 @@ components:
         remainingAmount:
           type: number
           description: Deuda pendiente de la cuota
-        totalDebt:
+        totalDebtOutstanding:
           type: number
           description: Deuda total acumulada
         dueDate:
