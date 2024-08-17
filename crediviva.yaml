@@ -140,6 +140,7 @@ paths:
                 oneOf:
                   - $ref: "#/components/schemas/GetBalance"
                   - $ref: "#/components/schemas/GetBalanceAlreadyPaid"
+                  - $ref: "#/components/schemas/GetBalanceWriteOff"
         "400":
           description: No se ha proporcionado el número de cédula en la solicitud
           content:
@@ -281,6 +282,7 @@ paths:
                 oneOf:
                   - $ref: "#/components/schemas/GetBalancePuntoPago"
                   - $ref: "#/components/schemas/GetBalanceAlreadyPaidPuntoPago"
+                  - $ref: "#/components/schemas/GetBalanceWriteOffPuntoPago"
                   - $ref: "#/components/schemas/GetBalanceNoIdNumberPuntoPago"
                   - $ref: "#/components/schemas/GetBalanceForbiddenPuntoPago"
                   - $ref: "#/components/schemas/GetBalanceErrorConnectingDbPuntoPago"
@@ -1038,27 +1040,42 @@ components:
     GetBalance:
       type: object
       properties:
+        idNumber:
+          type: string
+          description: Número de identificación del cliente
+          example: "1-2345-5678"
         loanId:
           type: number
           description: Identificador único del crédito
+          example: 123456
+        creditNumber:
+          type: number
+          description: Número único del crédito
+          example: 654321
         installmentNumber:
           type: number
           description: Plazo correspondiente a la cuota
+          example: 1
         monthlyInstallment:
           type: number
           description: Monto inicial de la cuota
+          example: 100.00
         amountPaid:
           type: number
           description: Monto pagado hasta el momento de la cuota
+          example: 25.00
         remainingAmount:
           type: number
           description: Deuda pendiente de la cuota
+          example: 75.00
         totalDebt:
           type: number
           description: Deuda total acumulada
+          example: 1000.00
         dueDate:
           type: string
           description: Fecha en la que la cuota vence
+          example: "31/7/2024"
     GetBalancePuntoPago:
       type: object
       properties:
@@ -1066,30 +1083,57 @@ components:
           type: number
           description: "Código devuelto por el servicio"
           example: 200
+        idNumber:
+          type: string
+          description: Número de identificación del cliente
+          example: "1-2345-5678"
         loanId:
           type: number
           description: Identificador único del crédito
+          example: 123456
+        creditNumber:
+          type: number
+          description: Número único del crédito
+          example: 654321
         installmentNumber:
           type: number
           description: Plazo correspondiente a la cuota
+          example: 1
         biweeklyInstallment:
           type: number
           description: Monto inicial de la cuota
+          example: 100.00
         amountPaid:
           type: number
           description: Monto pagado hasta el momento de la cuota
+          example: 25.00
         remainingAmount:
           type: number
           description: Deuda pendiente de la cuota
+          example: 75.00
         totalDebtOutstanding:
           type: number
           description: Deuda total acumulada
+          example: 1000.00
         dueDate:
           type: string
           description: Fecha en la que la cuota vence
+          example: "31/7/2024"
     GetBalanceAlreadyPaid:
       type: object
       properties:
+        idNumber:
+          type: string
+          description: Número de identificación del cliente
+          example: "1-2345-5678"
+        loanId:
+          type: number
+          description: Identificador único del crédito
+          example: 123456
+        creditNumber:
+          type: number
+          description: Número único del crédito
+          example: 654321
         message:
           type: string
           example: "Credit fully paid"
@@ -1100,9 +1144,75 @@ components:
           type: number
           description: "Código devuelto por el servicio"
           example: 200
+        idNumber:
+          type: string
+          description: Número de identificación del cliente
+          example: "1-2345-5678"
+        loanId:
+          type: number
+          description: Identificador único del crédito
+          example: 123456
+        creditNumber:
+          type: number
+          description: Número único del crédito
+          example: 654321
         message:
           type: string
           example: "Credit fully paid"
+    GetBalanceWriteOff:
+      type: object
+      properties:
+        idNumber:
+          type: string
+          description: Número de identificación del cliente
+          example: "1-2345-5678"
+        loanId:
+          type: number
+          description: Identificador único del crédito
+          example: 123456
+        creditNumber:
+          type: number
+          description: Número único del crédito
+          example: 654321
+        installmentNumber:
+          type: number
+          description: Plazo correspondiente a la cuota
+          example: 1
+        monthlyInstallment:
+          type: number
+          description: Monto inicial de la cuota
+          example: 100.00
+        totalDebt:
+          type: number
+          description: Deuda total acumulada
+          example: 1000.00
+    GetBalanceWriteOffPuntoPago:
+      type: object
+      properties:
+        idNumber:
+          type: string
+          description: Número de identificación del cliente
+          example: "1-2345-5678"
+        loanId:
+          type: number
+          description: Identificador único del crédito
+          example: 123456
+        creditNumber:
+          type: number
+          description: Número único del crédito
+          example: 654321
+        installmentNumber:
+          type: number
+          description: Plazo correspondiente a la cuota
+          example: 1
+        biweeklyInstallment:
+          type: number
+          description: Monto quincenal de la cuota
+          example: 100.00
+        totalDebtOutstanding:
+          type: number
+          description: Deuda total acumulada
+          example: 1000.00
     GetBalanceNoIdNumber:
       type: object
       description: Sin Header
@@ -1161,6 +1271,10 @@ components:
       type: object
       description: Sin Header
       properties:
+        idNumber:
+          type: string
+          description: Número de identificación del cliente
+          example: "1-2345-5678"
         message:
           type: string
           example: "User not found"
@@ -1172,6 +1286,10 @@ components:
           type: number
           description: "Código devuelto por el servicio"
           example: 404
+        idNumber:
+          type: string
+          description: Número de identificación del cliente
+          example: "1-2345-5678"
         message:
           type: string
           example: "User not found"
@@ -1179,6 +1297,10 @@ components:
       type: object
       description: Sin Header
       properties:
+        idNumber:
+          type: string
+          description: Número de identificación del cliente
+          example: "1-2345-5678"
         message:
           type: string
           example: "Credit not found"
@@ -1190,6 +1312,10 @@ components:
           type: number
           description: "Código devuelto por el servicio"
           example: 404
+        idNumber:
+          type: string
+          description: Número de identificación del cliente
+          example: "1-2345-5678"
         message:
           type: string
           example: "Credit not found"
@@ -1197,6 +1323,10 @@ components:
       type: object
       description: Sin Header
       properties:
+        idNumber:
+          type: string
+          description: Número de identificación del cliente
+          example: "1-2345-5678"
         message:
           type: string
           example: "Installments not found"
@@ -1208,6 +1338,10 @@ components:
           type: number
           description: "Código devuelto por el servicio"
           example: 404
+        idNumber:
+          type: string
+          description: Número de identificación del cliente
+          example: "1-2345-5678"
         message:
           type: string
           example: "Installments not found"
@@ -2055,7 +2189,6 @@ components:
         transactionId:
           type: string
           description: ID único de transacción
-
     Invoice:
       type: object
       required:
