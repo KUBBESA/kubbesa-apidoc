@@ -1455,8 +1455,8 @@ components:
           example: "N/A"
           description: "Identificación del cajero que procesó el pago."
         total_payment:
-          type: string
-          example: "$0.10"
+          type: number
+          example: 20.10
           description: "Monto total del pago realizado."
         total_obligation_at_start:
           type: number
@@ -1468,11 +1468,11 @@ components:
           description: "Obligación total antes del pago."
         total_obligation_after_payment:
           type: number
-          example: 218.9
+          example: 218.90
           description: "Obligación total después del pago."
         total_obligation_if_pre_cancelled:
           type: number
-          example: 218.9
+          example: 218.90
           description: "Obligación total si se cancela antes del pago."
     MakePaymentNoParameters:
       type: object
