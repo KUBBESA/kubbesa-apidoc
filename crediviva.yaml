@@ -1714,7 +1714,7 @@ components:
       properties:
         message:
           type: string
-          example: "Transaction amount must be greater than zero"
+          example: "Transaction amount must be greater than 100"
     CreateQrCodeRedDigital:
       type: object
       description: Sin Header
