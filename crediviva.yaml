@@ -1830,22 +1830,28 @@ components:
               type: number
               example: 12
               description: Plazo de cuotas en meses
-            commissionAmount:
-              oneOf:
-                - type: string
-                - type: "null"
-              example: 100
-              description: Monto de comisión
-            commissionITBMS:
-              type: number
-              example: 7
-              description: Porcentaje de comisión
             commissionPercentage:
               oneOf:
                 - type: string
                 - type: "null"
               example: "10%"
               description: ITBMS del monto de comisión
+            commissionAmount:
+              oneOf:
+                - type: number
+                - type: "null"
+              example: 100
+              description: Monto de comisión sin ITBMS
+            commissionITBMS:
+              type: number
+              example: 7
+              description: Porcentaje de comisión
+            commissionTotalAmount:
+              oneOf:
+                - type: number
+                - type: "null"
+              example: 107
+              description: Monto total de comisión
         createdAt:
           type: string
           example: "2024-02-14T12:00:00Z"
