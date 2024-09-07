@@ -1083,6 +1083,10 @@ components:
           type: number
           description: "Código devuelto por el servicio"
           example: 200
+        name:
+          type: string
+          description: Nombre del cliente
+          example: "John Doe"
         idNumber:
           type: string
           description: Número de identificación del cliente
@@ -1119,6 +1123,18 @@ components:
           type: string
           description: Fecha en la que la cuota vence
           example: "31/7/2024"
+        prepaymentAmount:
+          type: number
+          description: Monto de precancelación
+          example: 700.00
+        totalOverdue:
+          type: number
+          description: Monto total atrasado
+          example: 100.00
+        writtenOff:
+          type: boolean
+          description: Indicador de crédito castigado
+          example: false
     GetBalanceAlreadyPaid:
       type: object
       properties:
@@ -1189,6 +1205,10 @@ components:
     GetBalanceWriteOffPuntoPago:
       type: object
       properties:
+        name:
+          type: string
+          description: Nombre del cliente
+          example: "John Doe"
         idNumber:
           type: string
           description: Número de identificación del cliente
@@ -1213,6 +1233,10 @@ components:
           type: number
           description: Deuda total acumulada
           example: 1000.00
+        writtenOff:
+          type: boolean
+          description: Indicador de crédito castigado
+          example: true
     GetBalanceNoIdNumber:
       type: object
       description: Sin Header
@@ -1422,58 +1446,61 @@ components:
           type: number
           description: "Código devuelto por el servicio"
           example: 200
-        payment_date:
-          type: string
-          example: "12/28/2023, 9:47:58 a. m."
-          description: "Fecha y hora del pago."
-        collection_office:
-          type: string
-          example: "PUNTO PAGO"
-          description: "Oficina de cobro asociada al pago."
-        customer_name:
-          type: string
-          example: "Pepito Flores"
-          description: "Nombre completo del cliente."
-        id_number:
-          type: string
-          example: "9-229-1200"
-          description: "Número de identificación del cliente."
-        credit_number:
-          type: number
-          example: 200231
-          description: "Número de crédito asociado al pago."
-        transaction_number:
-          type: string
-          example: "60b7509715a82214"
-          description: "Número de transacción del pago."
-        payment_method:
-          type: string
-          example: "PUNTO PAGO"
-          description: "Método de pago utilizado."
-        cashier_id:
-          type: string
-          example: "N/A"
-          description: "Identificación del cajero que procesó el pago."
-        total_payment:
-          type: number
-          example: 20.10
-          description: "Monto total del pago realizado."
-        total_obligation_at_start:
-          type: number
-          example: 300
-          description: Obligación total al inicio del proceso de pago.
-        total_obligation_before_payment:
-          type: number
-          example: 219
-          description: "Obligación total antes del pago."
-        total_obligation_after_payment:
-          type: number
-          example: 218.90
-          description: "Obligación total después del pago."
-        total_obligation_if_pre_cancelled:
-          type: number
-          example: 218.90
-          description: "Obligación total si se cancela antes del pago."
+        receiptResponse:
+          type: object
+          properties:
+            payment_date:
+              type: string
+              example: "12/28/2023, 9:47:58 a. m."
+              description: "Fecha y hora del pago."
+            collection_office:
+              type: string
+              example: "PUNTO PAGO"
+              description: "Oficina de cobro asociada al pago."
+            customer_name:
+              type: string
+              example: "Pepito Flores"
+              description: "Nombre completo del cliente."
+            id_number:
+              type: string
+              example: "9-229-1200"
+              description: "Número de identificación del cliente."
+            credit_number:
+              type: number
+              example: 200231
+              description: "Número de crédito asociado al pago."
+            transaction_number:
+              type: string
+              example: "60b7509715a82214"
+              description: "Número de transacción del pago."
+            payment_method:
+              type: string
+              example: "PUNTO PAGO"
+              description: "Método de pago utilizado."
+            cashier_id:
+              type: string
+              example: "N/A"
+              description: "Identificación del cajero que procesó el pago."
+            total_payment:
+              type: number
+              example: 20.10
+              description: "Monto total del pago realizado."
+            total_obligation_at_start:
+              type: number
+              example: 300
+              description: Obligación total al inicio del proceso de pago.
+            total_obligation_before_payment:
+              type: number
+              example: 219
+              description: "Obligación total antes del pago."
+            total_obligation_after_payment:
+              type: number
+              example: 218.90
+              description: "Obligación total después del pago."
+            total_obligation_if_pre_cancelled:
+              type: number
+              example: 218.90
+              description: "Obligación total si se cancela antes del pago."
     MakePaymentNoParameters:
       type: object
       description: Sin Header
@@ -2064,8 +2091,16 @@ components:
       properties:
         creditId:
           type: number
+          description: ID del crédito
+          example: 12345
         transactionAmount:
           type: number
+          description: Monto de la transacción
+          example: 100.50
+        puntoPagoId:
+          type: string
+          description: ID de transacción Punto Pago
+          example: "60b7509715a82214"
     Create_Qr_Code:
       type: object
       required:
