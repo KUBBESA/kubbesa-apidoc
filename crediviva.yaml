@@ -1823,6 +1823,10 @@ components:
               type: string
               example: "Código QR a la espera de escaneo"
               description: Descripción del estado del desembolso
+        chargesFlag:
+          description: Indicador de cargos aplicados en el desembolso
+          type: boolean
+          example: true
         client:
           type: object
           properties:
