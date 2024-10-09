@@ -1827,6 +1827,10 @@ components:
           description: Indicador de cargos aplicados en el desembolso
           type: boolean
           example: true
+        installment:
+          description: Cuota correspondiente al plan de financiamiento
+          type: number
+          example: 10.50
         client:
           type: object
           properties:
