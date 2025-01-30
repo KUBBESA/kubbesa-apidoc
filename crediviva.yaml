@@ -112,6 +112,9 @@ x-tagGroups:
   - name: Integración e-Commerce
     tags:
       - e-Commerce
+  - name: Integración Consultor de cupo
+    tags:
+      - Consultor de cupo
 
 security:
   - {}
@@ -961,6 +964,173 @@ paths:
       security:
         - defaultApiKey:
             - /integrations/e-commerce/orders/status:read
+  /credit-inquiries/inquiries:
+    get:
+      tags:
+        - Consultor de cupo
+      summary: Consultar cupo del cliente
+      description: "Este recurso consulta el cupo del cliente. si tiene cuenta, creditos activos y cupo disponible."
+      operationId: get-consultor-cupo
+      parameters:
+        - name: cedula
+          in: query
+          description: cedula del cliente
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Operación exitosa
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/consultorIsPendingConsultantResponse"
+                  - $ref: "#/components/schemas/consultorCreatedInquiryResponse"
+                  - $ref: "#/components/schemas/consultorIsApprovedResponse"
+                  - $ref: "#/components/schemas/consultorInvalidIdNumber"
+                  - $ref: "#/components/schemas/consultorRejected"
+                  - $ref: "#/components/schemas/consultorRejectedCSELog"
+                  - $ref: "#/components/schemas/consultorUserIsInProgress"
+                  - $ref: "#/components/schemas/ConsultorUserIsPending"
+                  - $ref: "#/components/schemas/consultorRejectedCreditApplication"
+                  - $ref: "#/components/schemas/consultorApprovedCseLog"
+                  - $ref: "#/components/schemas/consultorDisbursedAvalaible"
+                  - $ref: "#/components/schemas/consultorUserDisbursementActive"
+                  - $ref: "#/components/schemas/consultorAvalaibleForRetaking"
+                  - $ref: "#/components/schemas/consultorLVVDisbursementAvailable"
+                  - $ref: "#/components/schemas/consultorLVVDisbursementActive"
+        "400":
+          description: Número de cedula es requerido
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/consultorResponse400"
+        "403":
+          description: Sin autorización
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/consultorResponse403"
+        "500":
+          description: Error de Servidor
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/consultorResponse500"
+                  - $ref: "#/components/schemas/consultorResponseErrorCreating500"
+      security:
+        - bearerHttpAuthentication:
+            - /credit-inquiries/inquiries:read
+  /consultor.kubbesa.net:
+    servers:
+      - url: "wss://"
+        description: Servidor WebSocket
+    get:
+      tags:
+        - Consultor de cupo
+      summary: WebSocket
+      description: Establece la conexion WebSocket para cuando el cliente complete su solicitud, entonces obtener la respuesta obtenida por APC
+      operationId: consultor-websocket
+      responses:
+        '101':
+          description: Conexión establecida
+    post:
+      tags:
+        - Consultor de cupo
+      summary: Enviar mensaje
+      description: Envía mensaje para relacionar el cliente a validar con la conexión del WebSocket
+      operationId: consultor-websocket
+      requestBody:
+        $ref: "#/components/requestBodies/linkUserToWS"
+      responses:
+        '101':
+          description: Mensaje recibido
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/responseWSClientApproved"
+                  - $ref: "#/components/schemas/responseWSClientRejected"
+  /validate-panama-phone-number:
+    post:
+      tags:
+        - Consultor de cupo
+      summary: Validar número de teléfono panameño válido
+      description: "Este recurso valida si el número de teléfono es panameño y si no esta registrado a otro cliente."
+      operationId: validate-panama-phone-number
+      requestBody:
+        $ref: "#/components/requestBodies/validatePanamaPhoneNumber"
+      responses:
+        "200":
+          description: Operación exitosa
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/validatePanamaPhoneNumber200"
+        "400":
+          description: Número de telefono requerido
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/validatePanamaPhoneNumber400"
+                  - $ref: "#/components/schemas/validatePanamaInvalidPhoneNumber400"
+        "409":
+          description: Número de telefono registrado con otro cliente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/validatePanamaPhoneNumber409"
+        "500":
+          description: Error de Servidor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/validatePanamaPhoneNumber500"
+  /credit-inquiries/inquiry-twilio:
+    post:
+      tags:
+        - Consultor de cupo
+      summary: Enviar sms al número de teléfono
+      description: "Este recurso envía un sms al número de teléfono y actualiza el registro con el número de teléfono ingresado."
+      operationId: send-sms-to-consultor
+      requestBody:
+        $ref: "#/components/requestBodies/sendTwilioSMSConsultor"
+      responses:
+        "200":
+          description: Operación exitosa
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/sendTwilioSMSConsultor200"
+        "400":
+          description: Número de cedula es requerido
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/sendTwilioSMSConsultorRecordId400"
+                  - $ref: "#/components/schemas/sendTwilioSMSConsultorTypeTo400"
+                  - $ref: "#/components/schemas/sendTwilioSMSConsultorInvalidType400"
+        "403":
+          description: Sin autorización
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/sendTwilioSMSConsultor403"
+        "500":
+          description: Error de Servidor
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/sendTwilioSMSConsultor500"
+                  - $ref: "#/components/schemas/sendTwilioSMSConsultorFailSendMsg500"
+      security:
+        - bearerHttpAuthentication:
+            - /credit-inquiries/inquiry-twilio:read
 components:
   schemas:
     qrResponse:
@@ -2438,6 +2608,469 @@ components:
         message:
           type: string
           example: "Error de servidor"
+    consultorIsPendingConsultantResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            status:
+              type: string
+              description: El cliente no tiene una cuenta en Crediviva. Para poder consultar su pre-aprobación debe seleccionar el medio a través del cual desea realizar su validación de identidad.
+              example: "IS_PENDING_CONSULTANT"
+            webapp:
+              type: string
+              description: URL de la aplicación web asociada.
+              example: "https://kubbesa-9ac21--staging-hoa6mss6.web.app/#"
+            record:
+              type: object
+              properties:
+                insertedId:
+                  type: string
+                  description: ID del registro insertado.
+                  example: "67523fb3c9953f7fad060b45"
+    consultorCreatedInquiryResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            status:
+              type: string
+              description: El cliente no tiene una cuenta en Crediviva. Para poder consultar su pre-aprobación debe seleccionar el medio a través del cual desea realizar su validación de identidad.
+              example: "CREATED_INQUIRY"
+            record:
+              type: object
+              properties:
+                acknowledged:
+                  type: boolean
+                  description: Indica si la operación fue reconocida exitosamente.
+                  example: true
+                insertedId:
+                  type: string
+                  description: ID del registro insertado.
+                  example: "67523fb3c9953f7fad060b45"
+            webapp:
+              type: string
+              description: URL de la aplicación web asociada.
+              example: "https://kubbesa-9ac21--staging-hoa6mss6.web.app/#"
+    consultorIsApprovedResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            status:
+              type: string
+              description: El cliente se encuentra pre-aprobado. Para conocer su cupo aprobado es necesario que ingrese a la APP y complete la solicitud de crédito.
+              example: "IS_APPROVED"
+    consultorInvalidIdNumber:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:  
+            status:
+              type: string
+              description: Lo sentimos, solo se permite cédula panameña para iniciar una consulta.
+              example: "INVALID_ID_NUMBER"
+    consultorRejected:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            status:
+              type: string
+              description: El cliente se encuentra rechazado ya que no cumple con los criterios mínimos.
+              example: "IS_REJECTED"
+    consultorRejectedCSELog:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            status:
+              type: string
+              description: El cliente se encuentra rechazado ya que no cumple con los criterios mínimos.
+              example: "REJECTED_CS_LOG_USER"
+    consultorUserIsInProgress:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            status:
+              type: string
+              description: El cliente aún no ha finalizado su solicitud de crédito, para poder conocer su cupo aprobado es necesario que ingrese a la APP Crediviva para finalizar la misma.
+              example: "USER_IS_IN_PROGRESS"
+    ConsultorUserIsPending:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            status:
+              type: string
+              description: La solicitud de crédito del cliente se encuentra en análisis por parte de nuestro equipo de Créditos.
+              example: "USER_IS_PENDING"
+    consultorRejectedCreditApplication:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            status:
+              type: string
+              description: El cliente se encuentra rechazado ya que no cumple con los criterios mínimos.
+              example: "REJECTED_CREDIT_APLICATION_USER"
+    consultorApprovedCseLog:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            status:
+              type: string
+              description: El cliente se encuentra pre-aprobado. para conocer su cupo aprobado es necesario que ingrese a la APP y complete la solicitud de crédito.
+              example: "APRROVED_CS_LOG_USER"
+    consultorDisbursedAvalaible:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            user:
+              type: string
+              description: Nombre completo del usuario.
+              example: "Peter Parker"
+            amount:
+              type: number
+              description: Monto aprobado para el crédito.
+              example: 1500.75
+            status:
+              type: string
+              description: Estado de la disponibilidad del desembolso.
+              example: "DISBURSED_AVAILABLE"
+    consultorUserDisbursementActive:
+      data:
+          type: object
+          properties:
+            user:
+              type: string
+              description: Nombre completo del usuario.
+              example: "Peter Parker"
+            amount:
+              type: number
+              description: Monto aprobado para el crédito.
+              example: 1500.75
+            status:
+              type: string
+              description: El cliente tiene un cupo aprobado con Crediviva el cual actualmente se encuentra utilizado.
+              example: "USER_DISBURSEMENT_ACTIVE"
+    consultorAvalaibleForRetaking:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            user:
+              type: string
+              description: Nombre completo del usuario.
+              example: "Peter Parker"
+            amount:
+              type: number
+              description: Monto aprobado para el crédito.
+              example: 1500.75
+            status:
+              type: string
+              description: Estado de la disponibilidad para retanqueo.
+              example: "AVAILABLE_FOR_RETANKING"
+    consultorLVVDisbursementAvailable:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            status:
+              type: string
+              description: El cliente tiene un cupo aprobado con Crediviva el cual actualmente se encuentra utilizado.
+              example: LVV_DISBURSMENT_AVAILABLE
+    consultorLVVDisbursementActive:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            status:
+              type: string
+              description: El cliente tiene una cuenta con Crediviva pero es necesario que descargue la app para poder finalizar sus validaciones y actualizar su información de cupo.
+              example: LVV_DISBURSMENT_ACTIVE
+    consultorResponse400:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Cedula is required"
+    consultorResponse403:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Forbidden"
+    consultorResponse500:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Internal server error in catch"
+    consultorResponseErrorCreating500:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Error creating inquiry"
+        status:
+          type: string
+          example: "CREATED_INQUIRY_ERROR"
+    validatePhoneNumberConsultor:
+      type: object
+      required:
+        - phoneNumber
+      properties:
+        phoneNumber:
+          type: string
+          description: Número de teléfono.
+          example: "+50761112233"
+    validatePanamaPhoneNumber200:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Phone number is valid and not registered with another user"
+        isValid:
+          type: boolean
+          example: true
+    validatePanamaPhoneNumber400:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Phone number is required"
+    validatePanamaInvalidPhoneNumber400:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Invalid phone number format. Must be a valid Panama phone number."
+    validatePanamaPhoneNumber409:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Phone number is already registered with another user"
+    validatePanamaPhoneNumber500:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Internal server error"
+    sendTwilioSMSConsultor:
+      type: object
+      required:
+        - recordId
+        - type
+        - to
+      properties:
+        recordId:
+          type: string
+          description: ID del registro.
+          example: "60b7509715a82214"
+        type:
+          type: string
+          description: Tipo de mensaje.
+          enum:
+            - sms
+            - whatsapp
+          example: "sms"
+        to:
+          type: string
+          description: Número de teléfono.
+          example: "+50761112233"
+    sendTwilioSMSConsultor200:
+      type: object
+      properties:
+        message:
+          type: string
+          description: Mensaje indicando el resultado de la operación.
+          example: "Message sent successfully"
+        data:
+          type: object
+          properties:
+            body:
+              type: string
+              description: Contenido del mensaje enviado.
+              example: "Gracias por elegir a Crediviva para realizar tus compras, ingresa al siguiente link para completar tu validación de identidad y conocer tu resultado de pre-aprobación https://kubbesa-9ac21--staging-hoa6mss6.web.app/#/consultant?id=67523ad060b45fb3c9953f7f&registerByStoreDevice=false"
+            numSegments:
+              type: string
+              description: Número de segmentos del mensaje.
+              example: "5"
+            direction:
+              type: string
+              description: Dirección del mensaje (entrante o saliente).
+              example: "outbound-api"
+            from:
+              type: string
+              description: Número de origen.
+              example: "+11111111111"
+            to:
+              type: string
+              description: Número de destino.
+              example: "+50766666666"
+            dateUpdated:
+              type: string
+              format: date-time
+              description: Fecha y hora de última actualización.
+              example: "2025-01-22T21:33:50.000Z"
+            price:
+              type: string
+              nullable: true
+              description: Precio del mensaje (si aplica).
+              example: null
+            errorMessage:
+              type: string
+              nullable: true
+              description: Mensaje de error (si aplica).
+              example: null
+            uri:
+              type: string
+              description: URI del recurso.
+              example: "/2010-04-01/Accounts/accountSid/Messages/accountSid.json"
+            accountSid:
+              type: string
+              description: Identificador único de la cuenta.
+              example: "accountSid"
+            numMedia:
+              type: string
+              description: Número de elementos multimedia asociados al mensaje.
+              example: "0"
+            status:
+              type: string
+              description: Estado actual del mensaje.
+              example: "queued"
+            messagingServiceSid:
+              type: string
+              nullable: true
+              description: Identificador único del servicio de mensajería (si aplica).
+              example: null
+            sid:
+              type: string
+              description: Identificador único del mensaje.
+              example: "Sid"
+            dateSent:
+              type: string
+              format: date-time
+              nullable: true
+              description: Fecha y hora en que se envió el mensaje (si aplica).
+              example: null
+            dateCreated:
+              type: string
+              format: date-time
+              description: Fecha y hora de creación del mensaje.
+              example: "2025-01-22T21:33:50.000Z"
+            errorCode:
+              type: string
+              nullable: true
+              description: Código de error asociado al mensaje (si aplica).
+              example: null
+            priceUnit:
+              type: string
+              description: Unidad del precio.
+              example: "USD"
+            apiVersion:
+              type: string
+              description: Versión de la API utilizada.
+              example: "2010-04-01"
+            subresourceUris:
+              type: object
+              properties:
+                media:
+                  type: string
+                  description: URI de los recursos multimedia asociados.
+                  example: "/2010-04-01/Accounts/accountSid/Messages/accountSid/Media.json"
+    sendTwilioSMSConsultorRecordId400:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "recordId es requerido"
+    sendTwilioSMSConsultorTypeTo400:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Type, to, and message are required fields"
+    sendTwilioSMSConsultorInvalidType400:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Invalid message type. Must be either sms or whatsapp"
+    sendTwilioSMSConsultor403:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Forbidden"
+    sendTwilioSMSConsultor500:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Internal server error"
+    sendTwilioSMSConsultorFailSendMsg500:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Failed to send message"
+    linkUserToWS:
+      type: object
+      required:
+        - action
+        - userId
+        - env
+      properties:
+        action:
+          type: string
+          description: nombre de la conexión.
+          example: "createConnection"
+        userId:
+          type: string
+          description: id del registro del cliente.
+          example: "14526551asdasd"
+        env:
+          type: string
+          description: Ambiente.
+          example: "production"
+    responseWSClientApproved:
+      type: object
+      properties:
+        userId:
+          type: string
+          example: "5a4sd6a5sda6a54" 
+        status:
+          type: string
+          example: APROBADO
+    responseWSClientRejected:
+      type: object
+      properties:
+        userId:
+          type: string
+          example: "5a4sd6a5sda6a54" 
+        status:
+          type: string
+          example: RECHAZADO
   requestBodies:
     qr:
       content:
@@ -2481,6 +3114,27 @@ components:
             typedescription: Solicitud de Crédito
             title: "title rb disb"
             $ref: "#/components/schemas/Invoice"
+    validatePanamaPhoneNumber:
+      content:
+        application/json:
+          schema:
+            description: validate-panama-phone-number
+            title: "Request Body"
+            $ref: "#/components/schemas/validatePhoneNumberConsultor"
+    sendTwilioSMSConsultor:
+      content:
+        application/json:
+          schema:
+            description: send-twilio-sms-consultor
+            title: "Request Body"
+            $ref: "#/components/schemas/sendTwilioSMSConsultor"
+    linkUserToWS:
+      content:
+        application/json:
+          schema:
+            description: link-user-to-ws
+            title: "Request Body"
+            $ref: "#/components/schemas/linkUserToWS"
   securitySchemes:
     bearerHttpAuthentication:
       type: http
