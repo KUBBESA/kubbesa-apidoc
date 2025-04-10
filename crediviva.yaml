@@ -838,7 +838,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/eCommerceOrdersCreateResponse"
+                oneOf:
+                  - $ref: "#/components/schemas/eCommerceOrdersCreateResponse"
+                  - $ref: "#/components/schemas/eCommerceOrdersCreateResponseWithExternalMerchant"
         "400":
           description: Sin autenticación
           content:
@@ -1034,7 +1036,7 @@ paths:
       description: Establece la conexion WebSocket para cuando el cliente complete su solicitud, entonces obtener la respuesta obtenida por APC
       operationId: consultor-websocket
       responses:
-        '101':
+        "101":
           description: Conexión establecida
     post:
       tags:
@@ -1045,7 +1047,7 @@ paths:
       requestBody:
         $ref: "#/components/requestBodies/linkUserToWS"
       responses:
-        '101':
+        "101":
           description: Mensaje recibido
           content:
             application/json:
@@ -2500,7 +2502,6 @@ components:
         - commerceId
         - externalOrderId
         - callbackUrl
-        - callbackBody
       properties:
         amount:
           type: number
@@ -2518,10 +2519,14 @@ components:
           type: string
           description: Callback URL de notificación de eventos
           example: "https://example.com/event"
-        callbackBody:
+        externalMerchant:
           type: string
-          description: Payload para el callback URL
-          example: { id: "externalOrderId", event: "success" }
+          description: Nombre del comercio externo no registrado en Crediviva.
+          example: "External Merchant"
+        exrernalMerchantImageUrl:
+          type: string
+          description: URL de la imagen del comercio externo no registrado en Crediviva.
+          example: "http://example.com/merchant-logo.png"
     eCommerceOrdersCreateResponse:
       type: object
       properties:
@@ -2540,6 +2545,30 @@ components:
         redirectUrl:
           type: string
           example: "https://client.crediviva.com.pa/integrations/123ABC/orders/123456-ABCDE"
+    eCommerceOrdersCreateResponseWithExternalMerchant:
+      type: object
+      properties:
+        commerce:
+          type: string
+          example: "123ABC"
+        externalOrderId:
+          type: string
+          example: "123456-ABCDE"
+        amount:
+          type: number
+          example: 100
+        status:
+          type: string
+          example: "IN_PROGRESS"
+        redirectUrl:
+          type: string
+          example: "https://client.crediviva.com.pa/integrations/123ABC/orders/123456-ABCDE"
+        externalMerchant:
+          type: string
+          example: "External Merchant"
+        externalMerchantImageUrl:
+          type: string
+          example: "http://example.com/merchant-logo.png"
     eCommerceOrdersCreateResponse400:
       type: object
       properties:
@@ -2669,7 +2698,7 @@ components:
       properties:
         data:
           type: object
-          properties:  
+          properties:
             status:
               type: string
               description: Lo sentimos, solo se permite cédula panameña para iniciar una consulta.
@@ -2754,20 +2783,20 @@ components:
               example: "DISBURSED_AVAILABLE"
     consultorUserDisbursementActive:
       data:
-          type: object
-          properties:
-            user:
-              type: string
-              description: Nombre completo del usuario.
-              example: "Peter Parker"
-            amount:
-              type: number
-              description: Monto aprobado para el crédito.
-              example: 1500.75
-            status:
-              type: string
-              description: El cliente tiene un cupo aprobado con Crediviva el cual actualmente se encuentra utilizado.
-              example: "USER_DISBURSEMENT_ACTIVE"
+        type: object
+        properties:
+          user:
+            type: string
+            description: Nombre completo del usuario.
+            example: "Peter Parker"
+          amount:
+            type: number
+            description: Monto aprobado para el crédito.
+            example: 1500.75
+          status:
+            type: string
+            description: El cliente tiene un cupo aprobado con Crediviva el cual actualmente se encuentra utilizado.
+            example: "USER_DISBURSEMENT_ACTIVE"
     consultorAvalaibleForRetaking:
       type: object
       properties:
@@ -3058,7 +3087,7 @@ components:
       properties:
         userId:
           type: string
-          example: "5a4sd6a5sda6a54" 
+          example: "5a4sd6a5sda6a54"
         status:
           type: string
           example: APROBADO
@@ -3067,7 +3096,7 @@ components:
       properties:
         userId:
           type: string
-          example: "5a4sd6a5sda6a54" 
+          example: "5a4sd6a5sda6a54"
         status:
           type: string
           example: RECHAZADO
