@@ -1,4 +1,4 @@
-# OpenAPI v3.0.1
+# OpenAPI v3.0
 openapi: 3.0.1
 servers:
   - url: https://api.kubbesa.net/staging
@@ -86,6 +86,21 @@ tags:
     x-displayName: Usuario
     description: |
       <SchemaDefinition schemaRef="#/components/schemas/Credit_Application" />
+  - name: Autenticación de Clientes WhatsApp
+    x-displayName: Autenticación de Clientes WhatsApp
+    description: Endpoints para verificar y autenticar clientes de WhatsApp.
+  - name: Servicios de Documentos WhatsApp
+    x-displayName: Servicios de Documentos WhatsApp
+    description: Endpoints para generar y obtener documentos del cliente autenticado.
+  - name: customer_auth_whatsapp_model
+    x-displayName: Modelos de Autenticación WhatsApp
+    description: |
+      Modelos de respuesta para los endpoints de autenticación de WhatsApp.
+      Los parámetros de entrada se manejan como query parameters en las URLs.
+  - name: document_service_whatsapp_model
+    x-displayName: Modelos de Documentos WhatsApp
+    description: |
+      <SchemaDefinition schemaRef="#/components/schemas/DocumentResponse" />
 
 x-tagGroups:
   - name: Autenticación
@@ -112,6 +127,19 @@ x-tagGroups:
   - name: Integración e-Commerce
     tags:
       - e-Commerce
+  - name: Integración Consultor de cupo
+    tags:
+      - Consultor de cupo
+  - name: WhatsApp - Autenticación
+    tags:
+      - Autenticación de Clientes WhatsApp
+  - name: WhatsApp - Documentos
+    tags:
+      - Servicios de Documentos WhatsApp
+  - name: WhatsApp - Modelos
+    tags:
+      - customer_auth_whatsapp_model
+      - document_service_whatsapp_model
 
 security:
   - {}
@@ -140,6 +168,7 @@ paths:
                 oneOf:
                   - $ref: "#/components/schemas/GetBalance"
                   - $ref: "#/components/schemas/GetBalanceAlreadyPaid"
+                  - $ref: "#/components/schemas/GetBalanceWriteOff"
         "400":
           description: No se ha proporcionado el número de cédula en la solicitud
           content:
@@ -281,6 +310,7 @@ paths:
                 oneOf:
                   - $ref: "#/components/schemas/GetBalancePuntoPago"
                   - $ref: "#/components/schemas/GetBalanceAlreadyPaidPuntoPago"
+                  - $ref: "#/components/schemas/GetBalanceWriteOffPuntoPago"
                   - $ref: "#/components/schemas/GetBalanceNoIdNumberPuntoPago"
                   - $ref: "#/components/schemas/GetBalanceForbiddenPuntoPago"
                   - $ref: "#/components/schemas/GetBalanceErrorConnectingDbPuntoPago"
@@ -833,7 +863,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/eCommerceOrdersCreateResponse"
+                oneOf:
+                  - $ref: "#/components/schemas/eCommerceOrdersCreateResponse"
+                  - $ref: "#/components/schemas/eCommerceOrdersCreateResponseWithExternalMerchant"
         "400":
           description: Sin autenticación
           content:
@@ -959,6 +991,1092 @@ paths:
       security:
         - defaultApiKey:
             - /integrations/e-commerce/orders/status:read
+  /credit-inquiries/inquiries:
+    get:
+      tags:
+        - Consultor de cupo
+      summary: Consultar cupo del cliente
+      description: "Este recurso consulta el cupo del cliente. si tiene cuenta, creditos activos y cupo disponible."
+      operationId: get-consultor-cupo
+      parameters:
+        - name: cedula
+          in: query
+          description: cedula del cliente
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Operación exitosa
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/consultorIsPendingConsultantResponse"
+                  - $ref: "#/components/schemas/consultorCreatedInquiryResponse"
+                  - $ref: "#/components/schemas/consultorIsApprovedResponse"
+                  - $ref: "#/components/schemas/consultorInvalidIdNumber"
+                  - $ref: "#/components/schemas/consultorRejected"
+                  - $ref: "#/components/schemas/consultorRejectedCSELog"
+                  - $ref: "#/components/schemas/consultorUserIsInProgress"
+                  - $ref: "#/components/schemas/ConsultorUserIsPending"
+                  - $ref: "#/components/schemas/consultorRejectedCreditApplication"
+                  - $ref: "#/components/schemas/consultorApprovedCseLog"
+                  - $ref: "#/components/schemas/consultorDisbursedAvalaible"
+                  - $ref: "#/components/schemas/consultorUserDisbursementActive"
+                  - $ref: "#/components/schemas/consultorAvalaibleForRetaking"
+                  - $ref: "#/components/schemas/consultorLVVDisbursementAvailable"
+                  - $ref: "#/components/schemas/consultorLVVDisbursementActive"
+        "400":
+          description: Número de cedula es requerido
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/consultorResponse400"
+        "403":
+          description: Sin autorización
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/consultorResponse403"
+        "500":
+          description: Error de Servidor
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/consultorResponse500"
+                  - $ref: "#/components/schemas/consultorResponseErrorCreating500"
+      security:
+        - bearerHttpAuthentication:
+            - /credit-inquiries/inquiries:read
+  /consultor.kubbesa.net:
+    servers:
+      - url: "wss://"
+        description: Servidor WebSocket
+    get:
+      tags:
+        - Consultor de cupo
+      summary: WebSocket
+      description: Establece la conexion WebSocket para cuando el cliente complete su solicitud, entonces obtener la respuesta obtenida por APC
+      operationId: consultor-websocket
+      responses:
+        "101":
+          description: Conexión establecida
+    post:
+      tags:
+        - Consultor de cupo
+      summary: Enviar mensaje
+      description: Envía mensaje para relacionar el cliente a validar con la conexión del WebSocket
+      operationId: consultor-websocket
+      requestBody:
+        $ref: "#/components/requestBodies/linkUserToWS"
+      responses:
+        "101":
+          description: Mensaje recibido
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/responseWSClientApproved"
+                  - $ref: "#/components/schemas/responseWSClientRejected"
+  /validate-panama-phone-number:
+    post:
+      tags:
+        - Consultor de cupo
+      summary: Validar número de teléfono panameño válido
+      description: "Este recurso valida si el número de teléfono es panameño y si no esta registrado a otro cliente."
+      operationId: validate-panama-phone-number
+      requestBody:
+        $ref: "#/components/requestBodies/validatePanamaPhoneNumber"
+      responses:
+        "200":
+          description: Operación exitosa
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/validatePanamaPhoneNumber200"
+        "400":
+          description: Número de telefono requerido
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/validatePanamaPhoneNumber400"
+                  - $ref: "#/components/schemas/validatePanamaInvalidPhoneNumber400"
+        "409":
+          description: Número de telefono registrado con otro cliente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/validatePanamaPhoneNumber409"
+        "500":
+          description: Error de Servidor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/validatePanamaPhoneNumber500"
+  /credit-inquiries/inquiry-twilio:
+    post:
+      tags:
+        - Consultor de cupo
+      summary: Enviar sms al número de teléfono
+      description: "Este recurso envía un sms al número de teléfono y actualiza el registro con el número de teléfono ingresado."
+      operationId: send-sms-to-consultor
+      requestBody:
+        $ref: "#/components/requestBodies/sendTwilioSMSConsultor"
+      responses:
+        "200":
+          description: Operación exitosa
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/sendTwilioSMSConsultor200"
+        "400":
+          description: Número de cedula es requerido
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/sendTwilioSMSConsultorRecordId400"
+                  - $ref: "#/components/schemas/sendTwilioSMSConsultorTypeTo400"
+                  - $ref: "#/components/schemas/sendTwilioSMSConsultorInvalidType400"
+        "403":
+          description: Sin autorización
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/sendTwilioSMSConsultor403"
+        "500":
+          description: Error de Servidor
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/sendTwilioSMSConsultor500"
+                  - $ref: "#/components/schemas/sendTwilioSMSConsultorFailSendMsg500"
+      security:
+        - bearerHttpAuthentication:
+            - /credit-inquiries/inquiry-twilio:read
+  # =====================================================
+  # WHATSAPP CUSTOMER APIS
+  # =====================================================
+  /integrations/customer-auth/verify-phone:
+    get:
+      tags:
+        - Autenticación de Clientes WhatsApp
+      summary: Verificar si teléfono está registrado
+      description: |
+        Verifica si un número de teléfono está registrado en el sistema y determina 
+        el tipo de autenticación requerida.
+
+        **Reglas de Validación:**
+        - Teléfono debe tener formato exacto: +507XXXXXXXX
+        - Prefijo +507 es OBLIGATORIO seguido de exactamente 8 dígitos
+        - NO se acepta ningún otro formato (sin espacios, guiones, paréntesis)
+      operationId: verifyPhone
+      parameters:
+        - name: phone
+          in: query
+          required: true
+          schema:
+            type: string
+            pattern: "^\\+507[0-9]{8}$"
+          description: |
+            Número de teléfono con formato exacto requerido:
+            - OBLIGATORIO: +507 seguido de exactamente 8 dígitos
+            - Ejemplo válido: +50769442422
+            - NO se acepta ningún otro formato
+          examples:
+            valid_format:
+              summary: Formato exacto válido
+              value: "+50769442422"
+            another_valid:
+              summary: Otro número válido
+              value: "+50712345678"
+            third_valid:
+              summary: Tercer ejemplo válido
+              value: "+50787654321"
+      security:
+        - ApiKeyAuth:
+            - "/customer-auth/verify-phone:read"
+      responses:
+        "200":
+          description: Verificación exitosa
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VerifyPhoneResponse"
+              examples:
+                registered:
+                  summary: Cliente registrado
+                  value:
+                    success: true
+                    authType: 1
+                    message: "Número registrado en sistema"
+                not_registered:
+                  summary: Cliente no registrado
+                  value:
+                    success: true
+                    authType: 2
+                    message: "Número no registrado, se requiere información adicional"
+        "400":
+          description: Formato de teléfono inválido
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                invalid_phone:
+                  summary: Formato inválido
+                  value:
+                    success: false
+                    error: "INVALID_PHONE_FORMAT"
+                    message: "El formato del teléfono no es válido"
+        "401":
+          description: API Key inválida o faltante
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                invalid_api_key:
+                  summary: API Key inválida
+                  value:
+                    success: false
+                    error: "INVALID_API_KEY"
+                    message: "API Key inválida o faltante"
+        "429":
+          description: Rate limit excedido - Siempre se toma en cuenta como error de límite de velocidad
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                rate_limit:
+                  summary: Límite excedido
+                  value:
+                    success: false
+                    error: "RATE_LIMIT_EXCEEDED"
+                    message: "Límite de solicitudes excedido. Intente nuevamente más tarde."
+        "500":
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /integrations/customer-auth/authenticate:
+    get:
+      tags:
+        - Autenticación de Clientes WhatsApp
+      summary: Autenticar cliente
+      description: |
+        Autentica un cliente usando diferentes niveles de información según 
+        su estado de registro.
+
+        **Escenarios:**
+        - **Tipo 1 (Registrado)**: teléfono + cédula + fecha nacimiento
+        - **Tipo 2 (No registrado)**: Debe PRIMERO completar flujo OTP, luego teléfono + cédula + fecha nacimiento + email
+
+        **Flujo Completo Tipo 2:**
+        1. POST /otp/request → Solicitar OTP con cédula
+        2. POST /otp/verify → Verificar OTP y obtener tempToken
+        3. GET /authenticate → Autenticación completa con todos los datos
+
+        **Reglas de Matching:**
+        - Coincidencia 100% exacta requerida
+        - Todos los campos tienen el mismo peso
+        - 3-5 intentos fallidos → pausa de 10 minutos
+
+        **Formato de Cédulas:**
+        - Ingresar exactamente como aparece en el documento físico
+        - Incluir guiones, puntos, letras según corresponda al documento
+        - Ejemplos: 8-123-456, PE-1-234-567, 1-234-567, E-8-12345
+        - NO modificar el formato del documento original
+      operationId: authenticateCustomer
+      parameters:
+        - name: phone
+          in: query
+          required: true
+          schema:
+            type: string
+            pattern: "^\\+507[0-9]{8}$"
+          description: |
+            Número de teléfono con formato exacto requerido:
+            - OBLIGATORIO: +507 seguido de exactamente 8 dígitos
+            - Ejemplo válido: +50769442422
+            - NO se acepta ningún otro formato
+          example: "+50769442422"
+        - name: cedula
+          in: query
+          required: true
+          schema:
+            type: string
+            pattern: "^[A-Za-z0-9\\-\\.\\s]+$"
+          description: |
+            Cédula exactamente como aparece en el documento físico:
+            - Incluir guiones, puntos, letras según el documento original
+            - Ejemplos válidos: 8-123-456, PE-1-234-567, 1-234-567, E-8-12345
+            - NO modificar el formato del documento físico
+          example: "8-123-456"
+        - name: birthDate
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+            pattern: "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+          description: |
+            Fecha de nacimiento en formato exacto:
+            - Formato obligatorio: YYYY-MM-DD (año-mes-día)
+            - Ejemplo válido: 1983-02-27
+            - Requerido solo para clientes NO registrados (Tipo 2)
+          example: "1983-02-27"
+        - name: email
+          in: query
+          required: false
+          schema:
+            type: string
+            format: email
+          description: |
+            Correo electrónico válido
+            - Requerido solo para clientes NO registrados (Tipo 2)
+          example: "cliente@email.com"
+      security:
+        - ApiKeyAuth:
+            - "/customer-auth/authenticate:read"
+      responses:
+        "200":
+          description: Autenticación procesada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthenticateResponse"
+              examples:
+                success:
+                  summary: Autenticación exitosa
+                  value:
+                    success: true
+                    authenticated: true
+                    sessionToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                    clientId: "12345"
+                    attemptsRemaining: 5
+                    message: "Cliente autenticado correctamente"
+                failed:
+                  summary: Autenticación fallida
+                  value:
+                    success: false
+                    authenticated: false
+                    sessionToken: null
+                    clientId: null
+                    attemptsRemaining: 3
+                    message: "Los datos ingresados no coinciden con nuestros registros"
+        "400":
+          description: Datos de solicitud inválidos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                invalid_data:
+                  summary: Datos inválidos
+                  value:
+                    success: false
+                    error: "INVALID_REQUEST_DATA"
+                    message: "Los datos enviados no tienen el formato correcto"
+        "401":
+          description: API Key inválida o faltante
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Cliente no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                customer_not_found:
+                  summary: Cliente no encontrado
+                  value:
+                    success: false
+                    error: "CUSTOMER_NOT_FOUND"
+                    message: "No se encontró un cliente con los datos proporcionados"
+        "422":
+          description: Datos no coinciden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                data_mismatch:
+                  summary: Datos no coinciden
+                  value:
+                    success: false
+                    error: "AUTH_DATA_MISMATCH"
+                    message: "Los datos ingresados no coinciden con nuestros registros"
+        "429":
+          description: Rate limit excedido - Siempre se toma en cuenta como error de límite de velocidad
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /integrations/customer-auth/otp/request:
+    post:
+      tags:
+        - Autenticación de Clientes WhatsApp
+      summary: Solicitar OTP para cliente no registrado
+      description: |
+        Solicita un OTP para clientes con teléfono no registrado (Tipo 2).
+
+        **Flujo:**
+        1. Cliente ingresa cédula
+        2. Sistema busca email asociado en DB
+        3. Envía OTP de 6 dígitos al email
+        4. Retorna email ofuscado para confirmación
+
+        **Configuración OTP:**
+        - **Dígitos**: 6 números
+        - **Expiración**: 5 minutos
+        - **Máximo reintentos**: 3
+        - **Reenvío**: Permitido
+      operationId: requestOtp
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OtpRequestBody"
+            examples:
+              valid_cedula:
+                summary: Cédula válida en sistema
+                value:
+                  cedula: "8-123-456"
+      security:
+        - ApiKeyAuth:
+            - "/customer-auth/otp/request:write"
+      responses:
+        "200":
+          description: OTP enviado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OtpRequestResponse"
+              examples:
+                otp_sent:
+                  summary: OTP enviado
+                  value:
+                    success: true
+                    otpSent: true
+                    maskedEmail: "leid******@gmail.com"
+                    expiresIn: 300
+                    maxRetries: 3
+                    message: "OTP enviado al email registrado"
+        "400":
+          description: Datos inválidos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                invalid_cedula_format:
+                  summary: Formato de cédula inválido
+                  value:
+                    success: false
+                    error: "INVALID_CEDULA_FORMAT"
+                    message: "El formato de cédula no es válido"
+        "401":
+          description: API Key inválida
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Cédula no encontrada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                cedula_not_found:
+                  summary: Cédula no registrada
+                  value:
+                    success: false
+                    error: "CEDULA_NOT_FOUND"
+                    message: "La cédula no está registrada en el sistema"
+        "429":
+          description: Rate limit excedido - Siempre se toma en cuenta como error de límite de velocidad
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /integrations/customer-auth/otp/verify:
+    post:
+      tags:
+        - Autenticación de Clientes WhatsApp
+      summary: Verificar OTP ingresado
+      description: |
+        Verifica el OTP ingresado por el cliente para validar su identidad.
+
+        **Reglas de Validación:**
+        - OTP debe ser exactamente 6 dígitos
+        - Máximo 3 intentos por OTP generado
+        - OTP expira en 5 minutos
+        - Después de 3 fallos, debe solicitar nuevo OTP
+      operationId: verifyOtp
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OtpVerifyBody"
+            examples:
+              valid_otp:
+                summary: OTP válido
+                value:
+                  cedula: "8-123-456"
+                  otp: "123456"
+      security:
+        - ApiKeyAuth:
+            - "/customer-auth/otp/verify:write"
+      responses:
+        "200":
+          description: Verificación de OTP procesada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OtpVerifyResponse"
+              examples:
+                otp_valid:
+                  summary: OTP válido
+                  value:
+                    success: true
+                    otpValid: true
+                    tempToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                    attemptsRemaining: 2
+                    message: "OTP verificado correctamente. Proceder con autenticación completa."
+                otp_invalid:
+                  summary: OTP inválido
+                  value:
+                    success: false
+                    otpValid: false
+                    tempToken: null
+                    attemptsRemaining: 1
+                    message: "OTP incorrecto. Intentos restantes: 1"
+                otp_expired:
+                  summary: OTP expirado
+                  value:
+                    success: false
+                    otpValid: false
+                    tempToken: null
+                    attemptsRemaining: 0
+                    message: "OTP expirado. Solicite un nuevo código."
+        "400":
+          description: Datos inválidos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                invalid_otp_format:
+                  summary: Formato OTP inválido
+                  value:
+                    success: false
+                    error: "INVALID_OTP_FORMAT"
+                    message: "El OTP debe tener exactamente 6 dígitos"
+        "401":
+          description: API Key inválida
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: Máximo de intentos excedido
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                max_attempts:
+                  summary: Máximo intentos alcanzado
+                  value:
+                    success: false
+                    error: "OTP_MAX_ATTEMPTS"
+                    message: "Máximo de intentos excedido. Solicite un nuevo OTP."
+        "429":
+          description: Rate limit excedido - Siempre se toma en cuenta como error de límite de velocidad
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /integrations/customer-auth/otp/resend:
+    post:
+      tags:
+        - Autenticación de Clientes WhatsApp
+      summary: Reenviar OTP
+      description: |
+        Reenvía un nuevo OTP al email del cliente.
+
+        **Reglas de Reenvío:**
+        - Invalida el OTP anterior
+        - Genera nuevo OTP con nueva expiración de 5 minutos
+        - Resetea contador de intentos a 3
+        - Mismo email que el OTP original
+      operationId: resendOtp
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OtpResendBody"
+            examples:
+              resend_request:
+                summary: Solicitud de reenvío
+                value:
+                  cedula: "8-123-456"
+      security:
+        - ApiKeyAuth:
+            - "/customer-auth/otp/resend:write"
+      responses:
+        "200":
+          description: OTP reenviado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OtpResendResponse"
+              examples:
+                resend_success:
+                  summary: Reenvío exitoso
+                  value:
+                    success: true
+                    otpResent: true
+                    maskedEmail: "leid******@gmail.com"
+                    newExpiresIn: 300
+                    maxRetries: 3
+                    message: "Nuevo OTP enviado al email registrado"
+        "400":
+          description: Datos inválidos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: API Key inválida
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: No hay OTP activo para reenviar
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                no_active_otp:
+                  summary: Sin OTP activo
+                  value:
+                    success: false
+                    error: "NO_ACTIVE_OTP"
+                    message: "No hay un OTP activo para esta cédula. Solicite uno nuevo."
+        "429":
+          description: Rate limit excedido - Siempre se toma en cuenta como error de límite de velocidad
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /integrations/document-service/account-statement:
+    get:
+      tags:
+        - Servicios de Documentos WhatsApp
+      summary: Obtener estado de cuenta
+      description: |
+        Genera y retorna el estado de cuenta del cliente autenticado.
+
+        **Requisitos:**
+        - Cliente debe estar autenticado (sessionToken válido)
+        - PDF se genera si no existe o se retorna URL temporal si ya existe
+        - URL temporal expira en 30 minutos
+      operationId: getAccountStatement
+      security:
+        - ApiKeyAuth:
+            - "/document-service/account-statement:read"
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Estado de cuenta disponible
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DocumentResponse"
+              examples:
+                success:
+                  summary: Documento disponible
+                  value:
+                    success: true
+                    document:
+                      type: "account_statement"
+                      downloadUrl: "https://s3.amazonaws.com/kubbesa-docs/temp/estado_cuenta_123456789_20250626.pdf?expires=1719403200"
+                      expiresAt: "2025-06-26T10:00:00Z"
+                      filename: "estado_cuenta_123456789.pdf"
+                      generatedAt: "2025-06-25T08:30:00Z"
+        "401":
+          description: Token inválido o expirado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                invalid_token:
+                  summary: Token inválido
+                  value:
+                    success: false
+                    error: "INVALID_SESSION_TOKEN"
+                    message: "El token de sesión es inválido"
+                expired_token:
+                  summary: Token expirado
+                  value:
+                    success: false
+                    error: "SESSION_EXPIRED"
+                    message: "La sesión ha expirado"
+        "403":
+          description: Acceso no autorizado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                unauthorized:
+                  summary: Sin autorización
+                  value:
+                    success: false
+                    error: "UNAUTHORIZED_ACCESS"
+                    message: "No tiene autorización para acceder a este recurso"
+        "404":
+          description: Documento no disponible
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                document_not_found:
+                  summary: Documento no encontrado
+                  value:
+                    success: false
+                    error: "DOCUMENT_NOT_AVAILABLE"
+                    message: "El documento solicitado no está disponible"
+        "429":
+          description: Rate limit excedido - Siempre se toma en cuenta como error de límite de velocidad
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /integrations/document-service/last-payment:
+    get:
+      tags:
+        - Servicios de Documentos WhatsApp
+      summary: Obtener último recibo de pago
+      description: |
+        Retorna el último recibo de pago del cliente autenticado.
+
+        **Requisitos:**
+        - Cliente debe estar autenticado (sessionToken válido)
+        - Se retorna el recibo más reciente disponible
+        - URL temporal expira en 30 minutos
+      operationId: getLastPayment
+      security:
+        - ApiKeyAuth:
+            - "/document-service/last-payment:read"
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Último recibo disponible
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DocumentResponse"
+              examples:
+                success:
+                  summary: Recibo disponible
+                  value:
+                    success: true
+                    document:
+                      type: "last_payment"
+                      downloadUrl: "https://s3.amazonaws.com/kubbesa-docs/temp/recibo_pago_123456789_20250625.pdf?expires=1719403200"
+                      expiresAt: "2025-06-26T10:00:00Z"
+                      filename: "recibo_pago_123456789.pdf"
+                      generatedAt: "2025-06-25T07:15:00Z"
+        "401":
+          description: Token inválido o expirado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                invalid_token:
+                  summary: Token inválido
+                  value:
+                    success: false
+                    error: "INVALID_SESSION_TOKEN"
+                    message: "El token de sesión es inválido"
+        "403":
+          description: Acceso no autorizado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Documento no disponible
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                no_payments:
+                  summary: Sin pagos registrados
+                  value:
+                    success: false
+                    error: "NO_PAYMENTS_FOUND"
+                    message: "No se encontraron pagos registrados para este cliente"
+        "429":
+          description: Rate limit excedido - Siempre se toma en cuenta como error de límite de velocidad
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /integrations/document-service/cancellation-letter:
+    get:
+      tags:
+        - Servicios de Documentos WhatsApp
+      summary: Obtener carta de cancelación
+      description: |
+        Obtiene una carta de cancelación para clientes con crédito cerrado.
+
+        **Reglas de Negocio:**
+        - Solo disponible para clientes con crédito CERRADO
+        - Si el crédito está activo, retorna error específico
+        - Información del destinatario se obtiene de parámetros de consulta
+      operationId: getCancellationLetter
+      parameters:
+        - name: addressedTo
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: ["SEÑORES", "SEÑORA", "SEÑOR"]
+          description: Forma de dirigirse al destinatario
+          example: "SEÑORES"
+        - name: recipientName
+          in: query
+          required: true
+          schema:
+            type: string
+            maxLength: 100
+          description: Nombre del destinatario de la carta
+          example: "Banco Nacional de Panamá"
+      security:
+        - ApiKeyAuth:
+            - "/document-service/cancellation-letter:read"
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Carta de cancelación disponible
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DocumentResponse"
+        "400":
+          description: Parámetros inválidos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                invalid_params:
+                  summary: Parámetros requeridos faltantes
+                  value:
+                    success: false
+                    error: "MISSING_REQUIRED_PARAMS"
+                    message: "Los parámetros addressedTo y recipientName son requeridos"
+        "401":
+          description: Token inválido o expirado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Crédito no cerrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                credit_not_closed:
+                  summary: Crédito activo
+                  value:
+                    success: false
+                    error: "CREDIT_NOT_CLOSED"
+                    message: "No cuenta con un crédito cerrado para generar carta de cancelación"
+                    details:
+                      creditStatus: "active"
+                      availableDocuments: ["balance_letter"]
+        "404":
+          description: Cliente o documento no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "429":
+          description: Rate limit excedido - Siempre se toma en cuenta como error de límite de velocidad
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /integrations/document-service/balance-letter:
+    get:
+      tags:
+        - Servicios de Documentos WhatsApp
+      summary: Obtener carta de saldo
+      description: |
+        Obtiene una carta de saldo para clientes con crédito activo o castigado.
+
+        **Reglas de Negocio:**
+        - Solo disponible para clientes con crédito ACTIVO o CASTIGADO
+        - Si el crédito está cerrado, retorna error específico
+        - Información del destinatario se obtiene de parámetros de consulta
+      operationId: getBalanceLetter
+      parameters:
+        - name: addressedTo
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: ["SEÑORES", "SEÑORA", "SEÑOR"]
+          description: Forma de dirigirse al destinatario
+          example: "SEÑORES"
+        - name: recipientName
+          in: query
+          required: true
+          schema:
+            type: string
+            maxLength: 100
+          description: Nombre del destinatario de la carta
+          example: "Superintendencia de Bancos"
+      security:
+        - ApiKeyAuth:
+            - "/document-service/balance-letter:read"
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Carta de saldo disponible
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DocumentResponse"
+        "400":
+          description: Parámetros inválidos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                invalid_params:
+                  summary: Parámetros requeridos faltantes
+                  value:
+                    success: false
+                    error: "MISSING_REQUIRED_PARAMS"
+                    message: "Los parámetros addressedTo y recipientName son requeridos"
+        "401":
+          description: Token inválido o expirado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Crédito cerrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                credit_closed:
+                  summary: Crédito cerrado
+                  value:
+                    success: false
+                    error: "CREDIT_NOT_ACTIVE"
+                    message: "No cuenta con un crédito activo para generar carta de saldo"
+                    details:
+                      creditStatus: "closed"
+                      availableDocuments: ["cancellation_letter"]
+        "404":
+          description: Cliente o documento no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "429":
+          description: Rate limit excedido - Siempre se toma en cuenta como error de límite de velocidad
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 components:
   schemas:
     qrResponse:
@@ -1038,27 +2156,42 @@ components:
     GetBalance:
       type: object
       properties:
+        idNumber:
+          type: string
+          description: Número de identificación del cliente
+          example: "1-2345-5678"
         loanId:
           type: number
           description: Identificador único del crédito
+          example: 123456
+        creditNumber:
+          type: number
+          description: Número único del crédito
+          example: 654321
         installmentNumber:
           type: number
           description: Plazo correspondiente a la cuota
+          example: 1
         monthlyInstallment:
           type: number
           description: Monto inicial de la cuota
+          example: 100.00
         amountPaid:
           type: number
           description: Monto pagado hasta el momento de la cuota
+          example: 25.00
         remainingAmount:
           type: number
           description: Deuda pendiente de la cuota
+          example: 75.00
         totalDebt:
           type: number
           description: Deuda total acumulada
+          example: 1000.00
         dueDate:
           type: string
           description: Fecha en la que la cuota vence
+          example: "31/7/2024"
     GetBalancePuntoPago:
       type: object
       properties:
@@ -1066,30 +2199,73 @@ components:
           type: number
           description: "Código devuelto por el servicio"
           example: 200
+        name:
+          type: string
+          description: Nombre del cliente
+          example: "John Doe"
+        idNumber:
+          type: string
+          description: Número de identificación del cliente
+          example: "1-2345-5678"
         loanId:
           type: number
           description: Identificador único del crédito
+          example: 123456
+        creditNumber:
+          type: number
+          description: Número único del crédito
+          example: 654321
         installmentNumber:
           type: number
           description: Plazo correspondiente a la cuota
-        monthlyInstallment:
+          example: 1
+        biweeklyInstallment:
           type: number
           description: Monto inicial de la cuota
+          example: 100.00
         amountPaid:
           type: number
           description: Monto pagado hasta el momento de la cuota
+          example: 25.00
         remainingAmount:
           type: number
           description: Deuda pendiente de la cuota
-        totalDebt:
+          example: 75.00
+        totalDebtOutstanding:
           type: number
           description: Deuda total acumulada
+          example: 1000.00
         dueDate:
           type: string
           description: Fecha en la que la cuota vence
+          example: "31/7/2024"
+        prepaymentAmount:
+          type: number
+          description: Monto de precancelación
+          example: 700.00
+        totalOverdue:
+          type: number
+          description: Monto total atrasado
+          example: 100.00
+        writtenOff:
+          type: boolean
+          description: Indicador de crédito castigado
+          example: false
     GetBalanceAlreadyPaid:
       type: object
       properties:
+        idNumber:
+          type: string
+          description: Número de identificación del cliente
+          example: "1-2345-5678"
+        loanId:
+          type: number
+          description: Identificador único del crédito
+          example: 123456
+        creditNumber:
+          type: number
+          description: Número único del crédito
+          example: 654321
         message:
           type: string
           example: "Credit fully paid"
@@ -1100,9 +2276,83 @@ components:
           type: number
           description: "Código devuelto por el servicio"
           example: 200
+        idNumber:
+          type: string
+          description: Número de identificación del cliente
+          example: "1-2345-5678"
+        loanId:
+          type: number
+          description: Identificador único del crédito
+          example: 123456
+        creditNumber:
+          type: number
+          description: Número único del crédito
+          example: 654321
         message:
           type: string
           example: "Credit fully paid"
+    GetBalanceWriteOff:
+      type: object
+      properties:
+        idNumber:
+          type: string
+          description: Número de identificación del cliente
+          example: "1-2345-5678"
+        loanId:
+          type: number
+          description: Identificador único del crédito
+          example: 123456
+        creditNumber:
+          type: number
+          description: Número único del crédito
+          example: 654321
+        installmentNumber:
+          type: number
+          description: Plazo correspondiente a la cuota
+          example: 1
+        monthlyInstallment:
+          type: number
+          description: Monto inicial de la cuota
+          example: 100.00
+        totalDebt:
+          type: number
+          description: Deuda total acumulada
+          example: 1000.00
+    GetBalanceWriteOffPuntoPago:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Nombre del cliente
+          example: "John Doe"
+        idNumber:
+          type: string
+          description: Número de identificación del cliente
+          example: "1-2345-5678"
+        loanId:
+          type: number
+          description: Identificador único del crédito
+          example: 123456
+        creditNumber:
+          type: number
+          description: Número único del crédito
+          example: 654321
+        installmentNumber:
+          type: number
+          description: Plazo correspondiente a la cuota
+          example: 1
+        biweeklyInstallment:
+          type: number
+          description: Monto quincenal de la cuota
+          example: 100.00
+        totalDebtOutstanding:
+          type: number
+          description: Deuda total acumulada
+          example: 1000.00
+        writtenOff:
+          type: boolean
+          description: Indicador de crédito castigado
+          example: true
     GetBalanceNoIdNumber:
       type: object
       description: Sin Header
@@ -1161,6 +2411,10 @@ components:
       type: object
       description: Sin Header
       properties:
+        idNumber:
+          type: string
+          description: Número de identificación del cliente
+          example: "1-2345-5678"
         message:
           type: string
           example: "User not found"
@@ -1172,6 +2426,10 @@ components:
           type: number
           description: "Código devuelto por el servicio"
           example: 404
+        idNumber:
+          type: string
+          description: Número de identificación del cliente
+          example: "1-2345-5678"
         message:
           type: string
           example: "User not found"
@@ -1179,6 +2437,10 @@ components:
       type: object
       description: Sin Header
       properties:
+        idNumber:
+          type: string
+          description: Número de identificación del cliente
+          example: "1-2345-5678"
         message:
           type: string
           example: "Credit not found"
@@ -1190,6 +2452,10 @@ components:
           type: number
           description: "Código devuelto por el servicio"
           example: 404
+        idNumber:
+          type: string
+          description: Número de identificación del cliente
+          example: "1-2345-5678"
         message:
           type: string
           example: "Credit not found"
@@ -1197,6 +2463,10 @@ components:
       type: object
       description: Sin Header
       properties:
+        idNumber:
+          type: string
+          description: Número de identificación del cliente
+          example: "1-2345-5678"
         message:
           type: string
           example: "Installments not found"
@@ -1208,6 +2478,10 @@ components:
           type: number
           description: "Código devuelto por el servicio"
           example: 404
+        idNumber:
+          type: string
+          description: Número de identificación del cliente
+          example: "1-2345-5678"
         message:
           type: string
           example: "Installments not found"
@@ -1261,8 +2535,8 @@ components:
           example: "8aa9dc91-f09a-48a4-844b-3178d3610a28"
           description: "Identificación del cajero que procesó el pago."
         total_payment:
-          type: string
-          example: "$0.10"
+          type: number
+          example: 20.10
           description: "Monto total del pago realizado."
         total_obligation_at_start:
           type: number
@@ -1274,11 +2548,11 @@ components:
           description: "Obligación total antes del pago."
         total_obligation_after_payment:
           type: number
-          example: 218.9
+          example: 218.90
           description: "Obligación total después del pago."
         total_obligation_if_pre_cancelled:
           type: number
-          example: 218.9
+          example: 218.90
           description: "Obligación total si se cancela antes del pago."
     MakePaymentPuntoPago:
       type: object
@@ -1288,58 +2562,61 @@ components:
           type: number
           description: "Código devuelto por el servicio"
           example: 200
-        payment_date:
-          type: string
-          example: "12/28/2023, 9:47:58 a. m."
-          description: "Fecha y hora del pago."
-        collection_office:
-          type: string
-          example: "PUNTO PAGO"
-          description: "Oficina de cobro asociada al pago."
-        customer_name:
-          type: string
-          example: "Pepito Flores"
-          description: "Nombre completo del cliente."
-        id_number:
-          type: string
-          example: "9-229-1200"
-          description: "Número de identificación del cliente."
-        credit_number:
-          type: number
-          example: 200231
-          description: "Número de crédito asociado al pago."
-        transaction_number:
-          type: string
-          example: "60b7509715a82214"
-          description: "Número de transacción del pago."
-        payment_method:
-          type: string
-          example: "PUNTO PAGO"
-          description: "Método de pago utilizado."
-        cashier_id:
-          type: string
-          example: "N/A"
-          description: "Identificación del cajero que procesó el pago."
-        total_payment:
-          type: string
-          example: "$0.10"
-          description: "Monto total del pago realizado."
-        total_obligation_at_start:
-          type: number
-          example: 300
-          description: Obligación total al inicio del proceso de pago.
-        total_obligation_before_payment:
-          type: number
-          example: 219
-          description: "Obligación total antes del pago."
-        total_obligation_after_payment:
-          type: number
-          example: 218.9
-          description: "Obligación total después del pago."
-        total_obligation_if_pre_cancelled:
-          type: number
-          example: 218.9
-          description: "Obligación total si se cancela antes del pago."
+        receiptResponse:
+          type: object
+          properties:
+            payment_date:
+              type: string
+              example: "12/28/2023, 9:47:58 a. m."
+              description: "Fecha y hora del pago."
+            collection_office:
+              type: string
+              example: "PUNTO PAGO"
+              description: "Oficina de cobro asociada al pago."
+            customer_name:
+              type: string
+              example: "Pepito Flores"
+              description: "Nombre completo del cliente."
+            id_number:
+              type: string
+              example: "9-229-1200"
+              description: "Número de identificación del cliente."
+            credit_number:
+              type: number
+              example: 200231
+              description: "Número de crédito asociado al pago."
+            transaction_number:
+              type: string
+              example: "60b7509715a82214"
+              description: "Número de transacción del pago."
+            payment_method:
+              type: string
+              example: "PUNTO PAGO"
+              description: "Método de pago utilizado."
+            cashier_id:
+              type: string
+              example: "N/A"
+              description: "Identificación del cajero que procesó el pago."
+            total_payment:
+              type: number
+              example: 20.10
+              description: "Monto total del pago realizado."
+            total_obligation_at_start:
+              type: number
+              example: 300
+              description: Obligación total al inicio del proceso de pago.
+            total_obligation_before_payment:
+              type: number
+              example: 219
+              description: "Obligación total antes del pago."
+            total_obligation_after_payment:
+              type: number
+              example: 218.90
+              description: "Obligación total después del pago."
+            total_obligation_if_pre_cancelled:
+              type: number
+              example: 218.90
+              description: "Obligación total si se cancela antes del pago."
     MakePaymentNoParameters:
       type: object
       description: Sin Header
@@ -1580,7 +2857,7 @@ components:
       properties:
         message:
           type: string
-          example: "Transaction amount must be greater than zero"
+          example: "Transaction amount must be greater than 100"
     CreateQrCodeRedDigital:
       type: object
       description: Sin Header
@@ -1662,6 +2939,14 @@ components:
               type: string
               example: "Código QR a la espera de escaneo"
               description: Descripción del estado del desembolso
+        chargesFlag:
+          description: Indicador de cargos aplicados en el desembolso
+          type: boolean
+          example: true
+        installment:
+          description: Cuota correspondiente al plan de financiamiento
+          type: number
+          example: 10.50
         client:
           type: object
           properties:
@@ -1690,19 +2975,34 @@ components:
           description: Información adicional del desembolso
         commissionInfo:
           type: object
+          description: La información de comisión aparecerá solo si el código QR ha sido consumido y aceptado por el cliente final.
           properties:
             installmentsPlanInMonths:
               type: number
               example: 12
               description: Plazo de cuotas en meses
-            commissionAmount:
-              type: number
-              example: 10.35
-              description: Monto de comisión
             commissionPercentage:
-              type: string
-              example: "7.35%"
+              oneOf:
+                - type: string
+                - type: "null"
+              example: "10%"
+              description: ITBMS del monto de comisión
+            commissionAmount:
+              oneOf:
+                - type: number
+                - type: "null"
+              example: 100
+              description: Monto de comisión sin ITBMS
+            commissionITBMS:
+              type: number
+              example: 7
               description: Porcentaje de comisión
+            commissionTotalAmount:
+              oneOf:
+                - type: number
+                - type: "null"
+              example: 107
+              description: Monto total de comisión
         createdAt:
           type: string
           example: "2024-02-14T12:00:00Z"
@@ -1804,7 +3104,7 @@ components:
       properties:
         message:
           type: string
-          example: "Parameters no encontrados: transactionId"
+          example: "Parametros no encontrados: transactionId"
     CancelCreditForbidden:
       type: object
       description: Sin Header
@@ -1915,8 +3215,16 @@ components:
       properties:
         creditId:
           type: number
+          description: ID del crédito
+          example: 12345
         transactionAmount:
           type: number
+          description: Monto de la transacción
+          example: 100.50
+        puntoPagoId:
+          type: string
+          description: ID de transacción Punto Pago
+          example: "60b7509715a82214"
     Create_Qr_Code:
       type: object
       required:
@@ -2054,7 +3362,6 @@ components:
         transactionId:
           type: string
           description: ID único de transacción
-
     Invoice:
       type: object
       required:
@@ -2139,7 +3446,6 @@ components:
         - commerceId
         - externalOrderId
         - callbackUrl
-        - callbackBody
       properties:
         amount:
           type: number
@@ -2157,10 +3463,14 @@ components:
           type: string
           description: Callback URL de notificación de eventos
           example: "https://example.com/event"
-        callbackBody:
+        externalMerchant:
           type: string
-          description: Payload para el callback URL
-          example: { id: "externalOrderId", event: "success" }
+          description: Nombre del comercio externo no registrado en Crediviva.
+          example: "External Merchant"
+        exrernalMerchantImageUrl:
+          type: string
+          description: URL de la imagen del comercio externo no registrado en Crediviva.
+          example: "http://example.com/merchant-logo.png"
     eCommerceOrdersCreateResponse:
       type: object
       properties:
@@ -2179,6 +3489,30 @@ components:
         redirectUrl:
           type: string
           example: "https://client.crediviva.com.pa/integrations/123ABC/orders/123456-ABCDE"
+    eCommerceOrdersCreateResponseWithExternalMerchant:
+      type: object
+      properties:
+        commerce:
+          type: string
+          example: "123ABC"
+        externalOrderId:
+          type: string
+          example: "123456-ABCDE"
+        amount:
+          type: number
+          example: 100
+        status:
+          type: string
+          example: "IN_PROGRESS"
+        redirectUrl:
+          type: string
+          example: "https://client.crediviva.com.pa/integrations/123ABC/orders/123456-ABCDE"
+        externalMerchant:
+          type: string
+          example: "External Merchant"
+        externalMerchantImageUrl:
+          type: string
+          example: "http://example.com/merchant-logo.png"
     eCommerceOrdersCreateResponse400:
       type: object
       properties:
@@ -2247,59 +3581,743 @@ components:
         message:
           type: string
           example: "Error de servidor"
-  requestBodies:
-    qr:
-      content:
-        application/json:
-          schema:
-            description: QR
-            title: "Request Body"
-            $ref: "#/components/schemas/Qr"
-    qrCancel:
-      content:
-        application/json:
-          schema:
-            description: QR-cancel
-            title: "Request Body"
-            $ref: "#/components/schemas/QrCancel"
-    eCommerceOrdersCreateOrder:
-      content:
-        application/json:
-          schema:
-            description: e-commerce-orders-create
-            title: "Request Body"
-            $ref: "#/components/schemas/eCommerceOrdersCreate"
-    eCommerceOrdersCancel:
-      content:
-        application/json:
-          schema:
-            description: e-commerce-orders-cancel
-            title: "Request Body"
-            $ref: "#/components/schemas/eCommerceOrdersCancel"
-    eCommerceOrdersStatus:
-      content:
-        application/json:
-          schema:
-            description: e-commerce-orders-status
-            title: "Request Body"
-            $ref: "#/components/schemas/eCommerceOrdersStatus"
-    invoice:
-      content:
-        application/json:
-          schema:
-            typedescription: Solicitud de Crédito
-            title: "title rb disb"
-            $ref: "#/components/schemas/Invoice"
+    consultorIsPendingConsultantResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            status:
+              type: string
+              description: El cliente no tiene una cuenta en Crediviva. Para poder consultar su pre-aprobación debe seleccionar el medio a través del cual desea realizar su validación de identidad.
+              example: "IS_PENDING_CONSULTANT"
+            webapp:
+              type: string
+              description: URL de la aplicación web asociada.
+              example: "https://kubbesa-9ac21--staging-hoa6mss6.web.app/#"
+            record:
+              type: object
+              properties:
+                insertedId:
+                  type: string
+                  description: ID del registro insertado.
+                  example: "67523fb3c9953f7fad060b45"
+    consultorCreatedInquiryResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            status:
+              type: string
+              description: El cliente no tiene una cuenta en Crediviva. Para poder consultar su pre-aprobación debe seleccionar el medio a través del cual desea realizar su validación de identidad.
+              example: "CREATED_INQUIRY"
+            record:
+              type: object
+              properties:
+                acknowledged:
+                  type: boolean
+                  description: Indica si la operación fue reconocida exitosamente.
+                  example: true
+                insertedId:
+                  type: string
+                  description: ID del registro insertado.
+                  example: "67523fb3c9953f7fad060b45"
+            webapp:
+              type: string
+              description: URL de la aplicación web asociada.
+              example: "https://kubbesa-9ac21--staging-hoa6mss6.web.app/#"
+    consultorIsApprovedResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            status:
+              type: string
+              description: El cliente se encuentra pre-aprobado. Para conocer su cupo aprobado es necesario que ingrese a la APP y complete la solicitud de crédito.
+              example: "IS_APPROVED"
+    consultorInvalidIdNumber:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            status:
+              type: string
+              description: Lo sentimos, solo se permite cédula panameña para iniciar una consulta.
+              example: "INVALID_ID_NUMBER"
+    consultorRejected:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            status:
+              type: string
+              description: El cliente se encuentra rechazado ya que no cumple con los criterios mínimos.
+              example: "IS_REJECTED"
+    consultorRejectedCSELog:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            status:
+              type: string
+              description: El cliente se encuentra rechazado ya que no cumple con los criterios mínimos.
+              example: "REJECTED_CS_LOG_USER"
+    consultorUserIsInProgress:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            status:
+              type: string
+              description: El cliente aún no ha finalizado su solicitud de crédito, para poder conocer su cupo aprobado es necesario que ingrese a la APP Crediviva para finalizar la misma.
+              example: "USER_IS_IN_PROGRESS"
+    ConsultorUserIsPending:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            status:
+              type: string
+              description: La solicitud de crédito del cliente se encuentra en análisis por parte de nuestro equipo de Créditos.
+              example: "USER_IS_PENDING"
+    consultorRejectedCreditApplication:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            status:
+              type: string
+              description: El cliente se encuentra rechazado ya que no cumple con los criterios mínimos.
+              example: "REJECTED_CREDIT_APLICATION_USER"
+    consultorApprovedCseLog:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            status:
+              type: string
+              description: El cliente se encuentra pre-aprobado. para conocer su cupo aprobado es necesario que ingrese a la APP y complete la solicitud de crédito.
+              example: "APRROVED_CS_LOG_USER"
+    consultorDisbursedAvalaible:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            user:
+              type: string
+              description: Nombre completo del usuario.
+              example: "Peter Parker"
+            amount:
+              type: number
+              description: Monto aprobado para el crédito.
+              example: 1500.75
+            status:
+              type: string
+              description: Estado de la disponibilidad del desembolso.
+              example: "DISBURSED_AVAILABLE"
+    consultorUserDisbursementActive:
+      data:
+        type: object
+        properties:
+          user:
+            type: string
+            description: Nombre completo del usuario.
+            example: "Peter Parker"
+          amount:
+            type: number
+            description: Monto aprobado para el crédito.
+            example: 1500.75
+          status:
+            type: string
+            description: El cliente tiene un cupo aprobado con Crediviva el cual actualmente se encuentra utilizado.
+            example: "USER_DISBURSEMENT_ACTIVE"
+    consultorAvalaibleForRetaking:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            user:
+              type: string
+              description: Nombre completo del usuario.
+              example: "Peter Parker"
+            amount:
+              type: number
+              description: Monto aprobado para el crédito.
+              example: 1500.75
+            status:
+              type: string
+              description: Estado de la disponibilidad para retanqueo.
+              example: "AVAILABLE_FOR_RETANKING"
+    consultorLVVDisbursementAvailable:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            status:
+              type: string
+              description: El cliente tiene un cupo aprobado con Crediviva el cual actualmente se encuentra utilizado.
+              example: LVV_DISBURSMENT_AVAILABLE
+    consultorLVVDisbursementActive:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            status:
+              type: string
+              description: El cliente tiene una cuenta con Crediviva pero es necesario que descargue la app para poder finalizar sus validaciones y actualizar su información de cupo.
+              example: LVV_DISBURSMENT_ACTIVE
+    consultorResponse400:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Cedula is required"
+    consultorResponse403:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Forbidden"
+    consultorResponse500:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Internal server error in catch"
+    consultorResponseErrorCreating500:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Error creating inquiry"
+        status:
+          type: string
+          example: "CREATED_INQUIRY_ERROR"
+    validatePhoneNumberConsultor:
+      type: object
+      required:
+        - phoneNumber
+      properties:
+        phoneNumber:
+          type: string
+          description: Número de teléfono.
+          example: "+50769442422"
+    # =====================================================
+    # SCHEMAS ADICIONALES PARA WHATSAPP
+    # =====================================================
+    sendTwilioSMSConsultor:
+      type: object
+      required:
+        - recordId
+        - typeTo
+      properties:
+        recordId:
+          type: string
+          description: ID del registro para envío de SMS.
+          example: "67523fb3c9953f7fad060b45"
+        typeTo:
+          type: string
+          description: Tipo de destinatario para el SMS.
+          example: "PHONE"
+    sendTwilioSMSConsultor200:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "SMS sent successfully"
+    sendTwilioSMSConsultorRecordId400:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Record ID is required"
+    sendTwilioSMSConsultorTypeTo400:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Type to is required"
+    sendTwilioSMSConsultorInvalidType400:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Invalid type"
+    sendTwilioSMSConsultor403:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Forbidden"
+    sendTwilioSMSConsultor500:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Internal server error"
+    sendTwilioSMSConsultorFailSendMsg500:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Failed to send SMS"
+    validatePanamaPhoneNumber200:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Phone number is valid"
+    validatePanamaPhoneNumber400:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Phone number is required"
+    validatePanamaInvalidPhoneNumber400:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Invalid phone number format"
+    validatePanamaPhoneNumber409:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Phone number already registered"
+    validatePanamaPhoneNumber500:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Internal server error"
+    linkUserToWSBody:
+      type: object
+      required:
+        - userId
+      properties:
+        userId:
+          type: string
+          description: ID del usuario para vincular al WebSocket.
+          example: "12345"
+    responseWSClientApproved:
+      type: object
+      properties:
+        status:
+          type: string
+          example: "APPROVED"
+        message:
+          type: string
+          example: "Client approved"
+    responseWSClientRejected:
+      type: object
+      properties:
+        status:
+          type: string
+          example: "REJECTED"
+        message:
+          type: string
+          example: "Client rejected"
+    # =====================================================
+    # NUEVOS SCHEMAS PARA WHATSAPP CUSTOMER AUTH
+    # =====================================================
+    VerifyPhoneResponse:
+      type: object
+      required:
+        - success
+        - authType
+        - message
+      properties:
+        success:
+          type: boolean
+          description: Indica si la operación fue exitosa
+        authType:
+          type: integer
+          enum: [1, 2]
+          description: |
+            Tipo de autenticación requerida:
+            - 1: Cliente registrado (teléfono + cédula)
+            - 2: Cliente no registrado (teléfono + cédula + fecha nacimiento + email)
+        message:
+          type: string
+          description: Mensaje descriptivo del resultado
+      additionalProperties: false
+    AuthenticateResponse:
+      type: object
+      required:
+        - success
+        - authenticated
+        - sessionToken
+        - clientId
+        - attemptsRemaining
+        - message
+      properties:
+        success:
+          type: boolean
+          description: Indica si la operación fue procesada
+        authenticated:
+          type: boolean
+          description: Indica si la autenticación fue exitosa
+        sessionToken:
+          type: string
+          nullable: true
+          description: JWT token para acceder a servicios de documentos (null si falla)
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        clientId:
+          type: string
+          nullable: true
+          description: ID único del cliente (null si falla)
+          example: "12345"
+        attemptsRemaining:
+          type: integer
+          description: Intentos restantes antes del bloqueo temporal
+          minimum: 0
+          maximum: 5
+        message:
+          type: string
+          description: Mensaje descriptivo del resultado
+        lockoutUntil:
+          type: string
+          format: date-time
+          description: Fecha hasta cuando está bloqueada la cuenta (solo si está bloqueada)
+          example: "2025-06-26T09:15:00Z"
+      additionalProperties: false
+    DocumentResponse:
+      type: object
+      required:
+        - success
+        - document
+      properties:
+        success:
+          type: boolean
+          description: Indica si la operación fue exitosa
+        document:
+          type: object
+          required:
+            - type
+            - downloadUrl
+            - expiresAt
+            - filename
+            - generatedAt
+          properties:
+            type:
+              type: string
+              enum:
+                [
+                  "account_statement",
+                  "last_payment",
+                  "cancellation_letter",
+                  "balance_letter",
+                ]
+              description: Tipo de documento generado
+            downloadUrl:
+              type: string
+              format: uri
+              description: URL temporal para descargar el PDF
+              example: "https://s3.amazonaws.com/kubbesa-docs/temp/documento_123456789.pdf?expires=1719403200"
+            expiresAt:
+              type: string
+              format: date-time
+              description: Fecha y hora de expiración de la URL
+              example: "2025-06-26T10:00:00Z"
+            filename:
+              type: string
+              description: Nombre sugerido para el archivo
+              example: "estado_cuenta_123456789.pdf"
+            generatedAt:
+              type: string
+              format: date-time
+              description: Fecha y hora de generación del documento
+              example: "2025-06-25T08:30:00Z"
+          additionalProperties: false
+      additionalProperties: false
+    OtpRequestBody:
+      type: object
+      required:
+        - cedula
+      properties:
+        cedula:
+          type: string
+          pattern: "^[A-Za-z0-9\\-\\.\\s]+$"
+          description: |
+            Cédula exactamente como aparece en el documento físico:
+            - Incluir guiones, puntos, letras según el documento original
+            - Ejemplo: 8-123-456, PE-1-234-567, E-8-12345
+          example: "8-123-456"
+      additionalProperties: false
+    OtpRequestResponse:
+      type: object
+      required:
+        - success
+        - otpSent
+        - maskedEmail
+        - expiresIn
+        - maxRetries
+        - message
+      properties:
+        success:
+          type: boolean
+          description: Indica si la operación fue exitosa
+        otpSent:
+          type: boolean
+          description: Indica si el OTP fue enviado correctamente
+        maskedEmail:
+          type: string
+          description: Email ofuscado para confirmación del destinatario
+          example: "leid******@gmail.com"
+        expiresIn:
+          type: integer
+          description: Tiempo de expiración del OTP en segundos
+          example: 300
+        maxRetries:
+          type: integer
+          description: Máximo número de intentos de verificación
+          example: 3
+        message:
+          type: string
+          description: Mensaje descriptivo del resultado
+      additionalProperties: false
+    OtpVerifyBody:
+      type: object
+      required:
+        - cedula
+        - otp
+      properties:
+        cedula:
+          type: string
+          pattern: "^[A-Za-z0-9\\-\\.\\s]+$"
+          description: |
+            Cédula exactamente como aparece en el documento físico
+          example: "8-123-456"
+        otp:
+          type: string
+          pattern: "^[0-9]{6}$"
+          description: |
+            Código OTP de exactamente 6 dígitos enviado al email
+          example: "123456"
+      additionalProperties: false
+    OtpVerifyResponse:
+      type: object
+      required:
+        - success
+        - otpValid
+        - tempToken
+        - attemptsRemaining
+        - message
+      properties:
+        success:
+          type: boolean
+          description: Indica si la operación fue procesada
+        otpValid:
+          type: boolean
+          description: Indica si el OTP ingresado es válido
+        tempToken:
+          type: string
+          nullable: true
+          description: Token temporal para continuar con autenticación completa (null si OTP inválido)
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        attemptsRemaining:
+          type: integer
+          description: Intentos restantes antes de bloquear el OTP
+          minimum: 0
+          maximum: 3
+        message:
+          type: string
+          description: Mensaje descriptivo del resultado
+      additionalProperties: false
+    OtpResendBody:
+      type: object
+      required:
+        - cedula
+      properties:
+        cedula:
+          type: string
+          pattern: "^[A-Za-z0-9\\-\\.\\s]+$"
+          description: |
+            Cédula exactamente como aparece en el documento físico
+          example: "8-123-456"
+      additionalProperties: false
+    OtpResendResponse:
+      type: object
+      required:
+        - success
+        - otpResent
+        - maskedEmail
+        - newExpiresIn
+        - maxRetries
+        - message
+      properties:
+        success:
+          type: boolean
+          description: Indica si la operación fue exitosa
+        otpResent:
+          type: boolean
+          description: Indica si el nuevo OTP fue enviado correctamente
+        maskedEmail:
+          type: string
+          description: Email ofuscado para confirmación del destinatario
+          example: "leid******@gmail.com"
+        newExpiresIn:
+          type: integer
+          description: Tiempo de expiración del nuevo OTP en segundos
+          example: 300
+        maxRetries:
+          type: integer
+          description: Máximo número de intentos de verificación resetado
+          example: 3
+        message:
+          type: string
+          description: Mensaje descriptivo del resultado
+      additionalProperties: false
+    ErrorResponse:
+      type: object
+      required:
+        - success
+        - error
+        - message
+      properties:
+        success:
+          type: boolean
+          description: Siempre false para errores
+          example: false
+        error:
+          type: string
+          description: Código de error específico
+          enum:
+            - "INVALID_PHONE_FORMAT"
+            - "INVALID_CEDULA_FORMAT"
+            - "INVALID_OTP_FORMAT"
+            - "INVALID_API_KEY"
+            - "INVALID_REQUEST_DATA"
+            - "CUSTOMER_NOT_FOUND"
+            - "CEDULA_NOT_FOUND"
+            - "AUTHENTICATION_FAILED"
+            - "AUTH_PHONE_NOT_FOUND"
+            - "AUTH_DATA_MISMATCH"
+            - "AUTH_MAX_ATTEMPTS"
+            - "AUTH_ACCOUNT_LOCKED"
+            - "OTP_MAX_ATTEMPTS"
+            - "OTP_EXPIRED"
+            - "NO_ACTIVE_OTP"
+            - "DOCUMENT_NOT_AVAILABLE"
+            - "NO_PAYMENTS_FOUND"
+            - "CREDIT_NOT_CLOSED"
+            - "CREDIT_NOT_ACTIVE"
+            - "MISSING_REQUIRED_PARAMS"
+            - "INVALID_SESSION_TOKEN"
+            - "SESSION_EXPIRED"
+            - "UNAUTHORIZED_ACCESS"
+            - "RATE_LIMIT_EXCEEDED"
+            - "INTERNAL_SERVER_ERROR"
+        message:
+          type: string
+          description: Mensaje descriptivo del error para mostrar al usuario
+        details:
+          type: object
+          description: Información adicional específica del error
+          additionalProperties: true
+      additionalProperties: false
+  # =====================================================
+  # SECURITY SCHEMES
+  # =====================================================
   securitySchemes:
     bearerHttpAuthentication:
       type: http
       scheme: Bearer
       bearerFormat: JWT
-      description: >-
-        `JWT` Token en el header `Authorization`, el cual concede de la autenticación necesaria para consumir los recursos expuestos para las operaciones descritas en el API que utilicen este método de autenticación.
+      description: |
+        `JWT` Token en el header `Authorization`, el cual concede de la autenticación necesaria
+        para consumir los recursos expuestos que requieren autenticación.
     defaultApiKey:
-      description: >
-        API-Key suministrado por Crediviva, el cual concede de la autenticación necesaria para consumir los recursos expuestos para las operaciones descritas en el API que utilicen este método de autenticación.
       type: apiKey
-      name: x-api-key
+      name: X-API-Key
       in: header
+      description: |
+        API-Key proporcionada por Crediviva, la cual concede la autenticación necesaria
+        para consumir los recursos expuestos que requieren autenticación.
+    ApiKeyAuth:
+      type: apiKey
+      name: X-API-Key
+      in: header
+      description: >
+        API-Key proporcionada por Crediviva, la cual concede la autenticación necesaria 
+        para consumir los recursos expuestos. Cada proveedor (Chattigo, Twilio, etc.) 
+        recibe una API Key única.
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: >
+        Token JWT obtenido del endpoint de autenticación de clientes. Requerido 
+        para acceder a los servicios de documentos.
+  # =====================================================
+  # REQUEST BODIES
+  # =====================================================
+  requestBodies:
+    qr:
+      description: Código QR para procesar
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Qr"
+    qrCancel:
+      description: Cancelar código QR
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/QrCancel"
+    invoice:
+      description: Factura asociada a la transacción
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Invoice"
+    eCommerceOrdersCreateOrder:
+      description: Crear orden de e-commerce
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/eCommerceOrdersCreate"
+    eCommerceOrdersCancel:
+      description: Cancelar orden de e-commerce
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/eCommerceOrdersCancel"
+    eCommerceOrdersStatus:
+      description: Estado de la orden de e-commerce
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/eCommerceOrdersStatus"
+    linkUserToWS:
+      description: Vincular usuario al WebSocket
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/linkUserToWSBody"
+    validatePanamaPhoneNumber:
+      description: Validar número de teléfono panameño
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/validatePhoneNumberConsultor"
+    sendTwilioSMSConsultor:
+      description: Enviar SMS via Twilio
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/sendTwilioSMSConsultor"
