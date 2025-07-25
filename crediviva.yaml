@@ -1161,7 +1161,7 @@ paths:
   # =====================================================
   # WHATSAPP CUSTOMER APIS
   # =====================================================
-  /integrations/customer-auth/verify-phone:
+  /integrations/v1/whatsapp-customer-api/customer-auth/verify-phone:
     get:
       tags:
         - Autenticación de Clientes WhatsApp
@@ -1199,7 +1199,7 @@ paths:
               value: "+50787654321"
       security:
         - ApiKeyAuth:
-            - "/customer-auth/verify-phone:read"
+            - "/v1/whatsapp-customer-api/customer-auth/verify-phone:read"
       responses:
         "200":
           description: Verificación exitosa
@@ -1266,7 +1266,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
-  /integrations/customer-auth/authenticate:
+  /integrations/v1/whatsapp-customer-api/customer-auth/authenticate:
     get:
       tags:
         - Autenticación de Clientes WhatsApp
@@ -1345,7 +1345,7 @@ paths:
           example: "cliente@email.com"
       security:
         - ApiKeyAuth:
-            - "/customer-auth/authenticate:read"
+            - "/v1/whatsapp-customer-api/customer-auth/authenticate:read"
       responses:
         "200":
           description: Autenticación procesada
@@ -1430,7 +1430,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
-  /integrations/customer-auth/otp/request:
+  /integrations/v1/whatsapp-customer-api/customer-auth/otp/request:
     post:
       tags:
         - Autenticación de Clientes WhatsApp
@@ -1463,7 +1463,7 @@ paths:
                   cedula: "8-123-456"
       security:
         - ApiKeyAuth:
-            - "/customer-auth/otp/request:write"
+            - "/v1/whatsapp-customer-api/customer-auth/otp/request:write"
       responses:
         "200":
           description: OTP enviado exitosamente
@@ -1526,7 +1526,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
-  /integrations/customer-auth/otp/verify:
+  /integrations/v1/whatsapp-customer-api/customer-auth/otp/verify:
     post:
       tags:
         - Autenticación de Clientes WhatsApp
@@ -1554,7 +1554,7 @@ paths:
                   otp: "1234"
       security:
         - ApiKeyAuth:
-            - "/customer-auth/otp/verify:write"
+            - "/v1/whatsapp-customer-api/customer-auth/otp/verify:write"
       responses:
         "200":
           description: Verificación de OTP procesada
@@ -1632,7 +1632,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
-  /integrations/customer-auth/otp/resend:
+  /integrations/v1/whatsapp-customer-api/customer-auth/otp/resend:
     post:
       tags:
         - Autenticación de Clientes WhatsApp
@@ -1659,7 +1659,7 @@ paths:
                   cedula: "8-123-456"
       security:
         - ApiKeyAuth:
-            - "/customer-auth/otp/resend:write"
+            - "/v1/whatsapp-customer-api/customer-auth/otp/resend:write"
       responses:
         "200":
           description: OTP reenviado exitosamente
@@ -1715,7 +1715,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
-  /integrations/document-service/account-statement:
+  /integrations/v1/whatsapp-customer-api/document-service/account-statement:
     get:
       tags:
         - Servicios de Documentos WhatsApp
@@ -1730,7 +1730,7 @@ paths:
       operationId: getAccountStatement
       security:
         - ApiKeyAuth:
-            - "/document-service/account-statement:read"
+            - "/v1/whatsapp-customer-api/document-service/account-statement:read"
         - BearerAuth: []
       responses:
         "200":
@@ -1808,7 +1808,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
-  /integrations/document-service/last-payment:
+  /integrations/v1/whatsapp-customer-api/document-service/last-payment:
     get:
       tags:
         - Servicios de Documentos WhatsApp
@@ -1823,7 +1823,7 @@ paths:
       operationId: getLastPayment
       security:
         - ApiKeyAuth:
-            - "/document-service/last-payment:read"
+            - "/v1/whatsapp-customer-api/document-service/last-payment:read"
         - BearerAuth: []
       responses:
         "200":
@@ -1888,7 +1888,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
-  /integrations/document-service/cancellation-letter:
+  /integrations/v1/whatsapp-customer-api/document-service/cancellation-letter:
     get:
       tags:
         - Servicios de Documentos WhatsApp
@@ -1920,7 +1920,7 @@ paths:
           example: "Banco Nacional de Panamá"
       security:
         - ApiKeyAuth:
-            - "/document-service/cancellation-letter:read"
+            - "/v1/whatsapp-customer-api/document-service/cancellation-letter:read"
         - BearerAuth: []
       responses:
         "200":
@@ -1983,7 +1983,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
-  /integrations/document-service/balance-letter:
+  /integrations/v1/whatsapp-customer-api/document-service/balance-letter:
     get:
       tags:
         - Servicios de Documentos WhatsApp
@@ -2015,7 +2015,7 @@ paths:
           example: "Superintendencia de Bancos"
       security:
         - ApiKeyAuth:
-            - "/document-service/balance-letter:read"
+            - "/v1/whatsapp-customer-api/document-service/balance-letter:read"
         - BearerAuth: []
       responses:
         "200":
@@ -2077,7 +2077,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
-  /integrations/error-report:
+  /integrations/v1/whatsapp-customer-api/error-report:
     post:
       tags:
         - Servicios de Documentos WhatsApp
@@ -2110,7 +2110,7 @@ paths:
                   errorDescription: "Error al generar estado de cuenta"
       security:
         - ApiKeyAuth:
-            - "/error-report:write"
+            - "/v1/whatsapp-customer-api/error-report:write"
         - BearerAuth: []
       responses:
         "200":
