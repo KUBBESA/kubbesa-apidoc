@@ -1441,11 +1441,11 @@ paths:
         **Flujo:**
         1. Cliente ingresa cédula
         2. Sistema busca email asociado en DB
-        3. Envía OTP de 6 dígitos al email
+        3. Envía OTP de 4 dígitos al email
         4. Retorna email ofuscado para confirmación
 
         **Configuración OTP:**
-        - **Dígitos**: 6 números
+        - **Dígitos**: 4 números
         - **Expiración**: 5 minutos
         - **Máximo reintentos**: 3
         - **Reenvío**: Permitido
@@ -1535,7 +1535,7 @@ paths:
         Verifica el OTP ingresado por el cliente para validar su identidad.
 
         **Reglas de Validación:**
-        - OTP debe ser exactamente 6 dígitos
+        - OTP debe ser exactamente 4 dígitos
         - Máximo 3 intentos por OTP generado
         - OTP expira en 5 minutos
         - Después de 3 fallos, debe solicitar nuevo OTP
@@ -1551,7 +1551,7 @@ paths:
                 summary: OTP válido
                 value:
                   cedula: "8-123-456"
-                  otp: "123456"
+                  otp: "1234"
       security:
         - ApiKeyAuth:
             - "/customer-auth/otp/verify:write"
@@ -1599,7 +1599,7 @@ paths:
                   value:
                     success: false
                     error: "INVALID_OTP_FORMAT"
-                    message: "El OTP debe tener exactamente 6 dígitos"
+                    message: "El OTP debe tener exactamente 4 dígitos"
         "401":
           description: API Key inválida
           content:
@@ -4200,10 +4200,10 @@ components:
           example: "8-123-456"
         otp:
           type: string
-          pattern: "^[0-9]{6}$"
+          pattern: "^[0-9]{4}$"
           description: |
             Código OTP de exactamente 6 dígitos enviado al email
-          example: "123456"
+          example: "1234"
       additionalProperties: false
     OtpVerifyResponse:
       type: object
