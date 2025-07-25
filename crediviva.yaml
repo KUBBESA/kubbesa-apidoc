@@ -2077,6 +2077,102 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+  /integrations/error-report:
+    post:
+      tags:
+        - Servicios de Documentos WhatsApp
+      summary: Reportar error del sistema
+      description: |
+        Permite a los usuarios reportar errores o problemas experimentados durante 
+        el uso de los servicios WhatsApp de CrediViva.
+
+        **Configuración:**
+        - **Rate Limiting**: 5 reportes por hora por usuario
+        - **Campos requeridos**: errorDescription
+        - **Soporte multi-país**: PA, CR, GT, etc.
+      operationId: reportError
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ErrorReportBody"
+            examples:
+              complete_report:
+                summary: Reporte completo
+                value:
+                  errorDescription: "No me muestra mi último comprobante de pago cuando lo solicito desde WhatsApp"
+                  country: "PA"
+                  channel: "WhatsApp"
+              minimal_report:
+                summary: Reporte mínimo
+                value:
+                  errorDescription: "Error al generar estado de cuenta"
+      security:
+        - ApiKeyAuth:
+            - "/error-report:write"
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Reporte guardado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorReportResponse"
+              examples:
+                success:
+                  summary: Reporte exitoso
+                  value:
+                    success: true
+                    document:
+                      reportId: "6883a6145b492b8fe07920bd"
+                      message: "Reporte de error guardado exitosamente"
+                      status: "PENDING"
+                      reportedAt: "2025-07-25T15:43:16.880Z"
+        "400":
+          description: Datos inválidos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                missing_description:
+                  summary: Descripción faltante
+                  value:
+                    success: false
+                    error: "MISSING_REQUIRED_PARAMS"
+                    message: "errorDescription es requerido y no debe ser un string vacío"
+                invalid_channel:
+                  summary: Canal inválido
+                  value:
+                    success: false
+                    error: "INVALID_REQUEST_DATA"
+                    message: "channel debe ser WhatsApp, Web o Mobile"
+        "401":
+          description: Token inválido o expirado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "429":
+          description: Rate limit excedido
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                rate_limit:
+                  summary: Límite excedido
+                  value:
+                    success: false
+                    error: "RATE_LIMIT_EXCEEDED"
+                    message: "Límite de reportes de error excedido. Máximo 5 reportes por hora"
+        "500":
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 components:
   schemas:
     qrResponse:
@@ -4229,6 +4325,71 @@ components:
           type: object
           description: Información adicional específica del error
           additionalProperties: true
+      additionalProperties: false
+    ErrorReportBody:
+      type: object
+      required:
+        - errorDescription
+      properties:
+        errorDescription:
+          type: string
+          minLength: 1
+          maxLength: 1000
+          description: |
+            Descripción detallada del error o problema experimentado
+          example: "No me muestra mi último comprobante de pago cuando lo solicito desde WhatsApp"
+        country:
+          type: string
+          pattern: "^[A-Z]{2}$"
+          description: |
+            Código de país ISO 2 letras (opcional, default: PA)
+          example: "PA"
+          default: "PA"
+        channel:
+          type: string
+          enum: ["WhatsApp", "Web", "Mobile"]
+          description: |
+            Canal donde ocurrió el error (opcional, default: WhatsApp)
+          example: "WhatsApp"
+          default: "WhatsApp"
+      additionalProperties: false
+    ErrorReportResponse:
+      type: object
+      required:
+        - success
+        - document
+      properties:
+        success:
+          type: boolean
+          description: Indica si la operación fue exitosa
+          example: true
+        document:
+          type: object
+          required:
+            - reportId
+            - message
+            - status
+            - reportedAt
+          properties:
+            reportId:
+              type: string
+              description: ID único del reporte generado
+              example: "6883a6145b492b8fe07920bd"
+            message:
+              type: string
+              description: Mensaje de confirmación
+              example: "Reporte de error guardado exitosamente"
+            status:
+              type: string
+              enum: ["PENDING", "IN_REVIEW", "RESOLVED", "CLOSED"]
+              description: Estado actual del reporte
+              example: "PENDING"
+            reportedAt:
+              type: string
+              format: date-time
+              description: Fecha y hora del reporte
+              example: "2025-07-25T15:43:16.880Z"
+          additionalProperties: false
       additionalProperties: false
   # =====================================================
   # SECURITY SCHEMES
