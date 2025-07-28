@@ -13,6 +13,9 @@ info:
   license:
     name: Apache 2.0
     url: https://www.apache.org/licenses/LICENSE-2.0
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0
   description: |
     # Introducción
     Este API esta docoumentado en formato **OpenAPI** desarrollado por el equipo de desarrollo de [Crediviva](https://crediviva.com.pa).
@@ -22,6 +25,7 @@ info:
 
     Crediviva ofrece la siguiente forma de autenticación:
       - API Key
+      - Bearer JWT Token
       - Bearer JWT Token
 
     <!-- ReDoc-Inject: <security-definitions> -->
@@ -159,6 +163,8 @@ paths:
       security:
         - defaultApiKey:
             - "/api-caja/get-balance:read"
+        - defaultApiKey:
+            - "/api-caja/get-balance:read"
       responses:
         "200":
           description: Operación exitosa
@@ -168,6 +174,7 @@ paths:
                 oneOf:
                   - $ref: "#/components/schemas/GetBalance"
                   - $ref: "#/components/schemas/GetBalanceAlreadyPaid"
+                  - $ref: "#/components/schemas/GetBalanceWriteOff"
                   - $ref: "#/components/schemas/GetBalanceWriteOff"
         "400":
           description: No se ha proporcionado el número de cédula en la solicitud
@@ -206,9 +213,17 @@ paths:
       security:
         - defaultApiKey:
             - "/api-caja/get-payment-methods:read"
+        - defaultApiKey:
+            - "/api-caja/get-payment-methods:read"
       responses:
         "200":
           description: Operación exitosa
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GetPaymentMethods"
+        "400":
+          description: No se ha proporcionado los parametros correspondientes
           content:
             application/json:
               schema:
@@ -238,6 +253,8 @@ paths:
             schema:
               $ref: "#/components/schemas/Make_Payment"
       security:
+        - defaultApiKey:
+            - "/api-caja/make-payment:write"
         - defaultApiKey:
             - "/api-caja/make-payment:write"
       responses:
@@ -293,6 +310,7 @@ paths:
       summary: Obtener saldo del cliente
       description: Obtiene el saldo asociado al cliente
       operationId: get-balance-punto-pago
+      operationId: get-balance-punto-pago
       requestBody:
         content:
           application/json:
@@ -301,8 +319,11 @@ paths:
       security:
         - defaultApiKey:
             - /integrations/payment/get-balance/punto-pago:read
+        - defaultApiKey:
+            - /integrations/payment/get-balance/punto-pago:read
       responses:
         "200":
+          description: Operación exitosa
           description: Operación exitosa
           content:
             application/json:
@@ -310,6 +331,7 @@ paths:
                 oneOf:
                   - $ref: "#/components/schemas/GetBalancePuntoPago"
                   - $ref: "#/components/schemas/GetBalanceAlreadyPaidPuntoPago"
+                  - $ref: "#/components/schemas/GetBalanceWriteOffPuntoPago"
                   - $ref: "#/components/schemas/GetBalanceWriteOffPuntoPago"
                   - $ref: "#/components/schemas/GetBalanceNoIdNumberPuntoPago"
                   - $ref: "#/components/schemas/GetBalanceForbiddenPuntoPago"
@@ -324,6 +346,7 @@ paths:
       summary: Realizar un pago
       description: Procesa un pago asociado al cliente
       operationId: make-payment-punto-pago
+      operationId: make-payment-punto-pago
       requestBody:
         content:
           application/json:
@@ -332,8 +355,11 @@ paths:
       security:
         - defaultApiKey:
             - /integrations/payment/make-payment/punto-pago:write
+        - defaultApiKey:
+            - /integrations/payment/make-payment/punto-pago:write
       responses:
         "200":
+          description: Operación exitosa
           description: Operación exitosa
           content:
             application/json:
@@ -354,6 +380,7 @@ paths:
     post:
       tags:
         - PULL
+        - PULL
       summary: Generar código QR
       description: Genera el código qr que será escaneado por el cliente
       operationId: create-qr-code
@@ -363,6 +390,8 @@ paths:
             schema:
               $ref: "#/components/schemas/Create_Qr_Code"
       security:
+        - bearerHttpAuthentication:
+            - "/pull/create-qr:write"
         - bearerHttpAuthentication:
             - "/pull/create-qr:write"
       responses:
@@ -421,6 +450,8 @@ paths:
       security:
         - bearerHttpAuthentication:
             - "/pull/get-info-qr:read"
+        - bearerHttpAuthentication:
+            - "/pull/get-info-qr:read"
       responses:
         "200":
           description: Operación exitosa
@@ -467,6 +498,8 @@ paths:
             schema:
               $ref: "#/components/schemas/Cancel_Qr"
       security:
+        - bearerHttpAuthentication:
+            - "/pull/cancel-qr:write"
         - bearerHttpAuthentication:
             - "/pull/cancel-qr:write"
       responses:
@@ -556,6 +589,60 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/CancelCreditErrorCancellingCredit"
+  /pull/cancel-credit:
+    post:
+      tags:
+        - PULL
+      summary: Cancelar crédito
+      description: Cancela el crédito activado asociado a la transacción
+      operationId: cancel-credit-pull
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Cancel_Credit"
+      security:
+        - bearerHttpAuthentication:
+            - "/pull/cancel-credit:write"
+      responses:
+        "200":
+          description: Operación exitosa
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CancelCredit"
+        "400":
+          description: No se ha proporcionado los parametros correspondientes
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CancelCreditNoParameters"
+        "403":
+          description: Sin permisos para acceder al recurso
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CancelCreditForbidden"
+        "404":
+          description: Recurso no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CancelCreditNotFound"
+        "409":
+          description: Crédito no puede ser cancelado
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/CancelCreditNotActive"
+                  - $ref: "#/components/schemas/CancelCreditHasPayments"
+        "500":
+          description: Error al cancelar la transacción
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CancelCreditErrorCancellingCredit"
   /red-digital/create-qr:
     post:
       tags:
@@ -569,6 +656,8 @@ paths:
             schema:
               $ref: "#/components/schemas/Create_Qr_Code_Red_Digital"
       security:
+        - defaultApiKey:
+            - "/red-digital/create-qr:write"
         - defaultApiKey:
             - "/red-digital/create-qr:write"
       responses:
@@ -691,6 +780,8 @@ paths:
       security:
         - bearerHttpAuthentication:
             - /creditapplications:read
+        - bearerHttpAuthentication:
+            - /creditapplications:read
   "/creditapplications/{id}":
     get:
       tags:
@@ -732,6 +823,8 @@ paths:
       security:
         - bearerHttpAuthentication:
             - /creditapplications/{id}:read
+        - bearerHttpAuthentication:
+            - /creditapplications/{id}:read
   /qr:
     post:
       tags:
@@ -762,6 +855,9 @@ paths:
         - bearerHttpAuthentication:
             - /qr:read
 
+        - bearerHttpAuthentication:
+            - /qr:read
+
   /qr/cancel:
     post:
       operationId: cancel-qr
@@ -789,6 +885,8 @@ paths:
         "500":
           description: Error de Servidor
       security:
+        - bearerHttpAuthentication:
+            - /qr/cancel:write
         - bearerHttpAuthentication:
             - /qr/cancel:write
   /qr/status:
@@ -823,6 +921,8 @@ paths:
       security:
         - bearerHttpAuthentication:
             - /qr/status:read
+        - bearerHttpAuthentication:
+            - /qr/status:read
   /invoice:
     post:
       tags:
@@ -848,6 +948,8 @@ paths:
       security:
         - bearerHttpAuthentication:
             - /invoice:write
+        - bearerHttpAuthentication:
+            - /invoice:write
   /integrations/e-commerce/orders:
     post:
       tags:
@@ -863,6 +965,9 @@ paths:
           content:
             application/json:
               schema:
+                oneOf:
+                  - $ref: "#/components/schemas/eCommerceOrdersCreateResponse"
+                  - $ref: "#/components/schemas/eCommerceOrdersCreateResponseWithExternalMerchant"
                 oneOf:
                   - $ref: "#/components/schemas/eCommerceOrdersCreateResponse"
                   - $ref: "#/components/schemas/eCommerceOrdersCreateResponseWithExternalMerchant"
@@ -891,6 +996,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/eCommerceOrdersResponse500"
       security:
+        - defaultApiKey:
+            - /integrations/e-commerce/orders:write
         - defaultApiKey:
             - /integrations/e-commerce/orders:write
   /integrations/e-commerce/orders/cancel:
@@ -940,6 +1047,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/eCommerceOrdersResponse500"
       security:
+        - defaultApiKey:
+            - /integrations/e-commerce/orders/cancel:write
         - defaultApiKey:
             - /integrations/e-commerce/orders/cancel:write
   /integrations/e-commerce/orders/status:
@@ -2256,9 +2365,18 @@ components:
           type: string
           description: Número de identificación del cliente
           example: "1-2345-5678"
+        idNumber:
+          type: string
+          description: Número de identificación del cliente
+          example: "1-2345-5678"
         loanId:
           type: number
           description: Identificador único del crédito
+          example: 123456
+        creditNumber:
+          type: number
+          description: Número único del crédito
+          example: 654321
           example: 123456
         creditNumber:
           type: number
@@ -2268,25 +2386,31 @@ components:
           type: number
           description: Plazo correspondiente a la cuota
           example: 1
+          example: 1
         monthlyInstallment:
           type: number
           description: Monto inicial de la cuota
+          example: 100.00
           example: 100.00
         amountPaid:
           type: number
           description: Monto pagado hasta el momento de la cuota
           example: 25.00
+          example: 25.00
         remainingAmount:
           type: number
           description: Deuda pendiente de la cuota
+          example: 75.00
           example: 75.00
         totalDebt:
           type: number
           description: Deuda total acumulada
           example: 1000.00
+          example: 1000.00
         dueDate:
           type: string
           description: Fecha en la que la cuota vence
+          example: "31/7/2024"
           example: "31/7/2024"
     GetBalancePuntoPago:
       type: object
@@ -2294,6 +2418,15 @@ components:
         statusCode:
           type: number
           description: "Código devuelto por el servicio"
+          example: 200
+        name:
+          type: string
+          description: Nombre del cliente
+          example: "John Doe"
+        idNumber:
+          type: string
+          description: Número de identificación del cliente
+          example: "1-2345-5678"
           example: 200
         name:
           type: string
@@ -2311,25 +2444,37 @@ components:
           type: number
           description: Número único del crédito
           example: 654321
+          example: 123456
+        creditNumber:
+          type: number
+          description: Número único del crédito
+          example: 654321
         installmentNumber:
           type: number
           description: Plazo correspondiente a la cuota
           example: 1
         biweeklyInstallment:
+          example: 1
+        biweeklyInstallment:
           type: number
           description: Monto inicial de la cuota
+          example: 100.00
           example: 100.00
         amountPaid:
           type: number
           description: Monto pagado hasta el momento de la cuota
+          example: 25.00
           example: 25.00
         remainingAmount:
           type: number
           description: Deuda pendiente de la cuota
           example: 75.00
         totalDebtOutstanding:
+          example: 75.00
+        totalDebtOutstanding:
           type: number
           description: Deuda total acumulada
+          example: 1000.00
           example: 1000.00
         dueDate:
           type: string
@@ -2347,9 +2492,34 @@ components:
           type: boolean
           description: Indicador de crédito castigado
           example: false
+          example: "31/7/2024"
+        prepaymentAmount:
+          type: number
+          description: Monto de precancelación
+          example: 700.00
+        totalOverdue:
+          type: number
+          description: Monto total atrasado
+          example: 100.00
+        writtenOff:
+          type: boolean
+          description: Indicador de crédito castigado
+          example: false
     GetBalanceAlreadyPaid:
       type: object
       properties:
+        idNumber:
+          type: string
+          description: Número de identificación del cliente
+          example: "1-2345-5678"
+        loanId:
+          type: number
+          description: Identificador único del crédito
+          example: 123456
+        creditNumber:
+          type: number
+          description: Número único del crédito
+          example: 654321
         idNumber:
           type: string
           description: Número de identificación del cliente
@@ -2384,9 +2554,84 @@ components:
           type: number
           description: Número único del crédito
           example: 654321
+          example: 200
+        idNumber:
+          type: string
+          description: Número de identificación del cliente
+          example: "1-2345-5678"
+        loanId:
+          type: number
+          description: Identificador único del crédito
+          example: 123456
+        creditNumber:
+          type: number
+          description: Número único del crédito
+          example: 654321
         message:
           type: string
           example: "Credit fully paid"
+    GetBalanceWriteOff:
+      type: object
+      properties:
+        idNumber:
+          type: string
+          description: Número de identificación del cliente
+          example: "1-2345-5678"
+        loanId:
+          type: number
+          description: Identificador único del crédito
+          example: 123456
+        creditNumber:
+          type: number
+          description: Número único del crédito
+          example: 654321
+        installmentNumber:
+          type: number
+          description: Plazo correspondiente a la cuota
+          example: 1
+        monthlyInstallment:
+          type: number
+          description: Monto inicial de la cuota
+          example: 100.00
+        totalDebt:
+          type: number
+          description: Deuda total acumulada
+          example: 1000.00
+    GetBalanceWriteOffPuntoPago:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Nombre del cliente
+          example: "John Doe"
+        idNumber:
+          type: string
+          description: Número de identificación del cliente
+          example: "1-2345-5678"
+        loanId:
+          type: number
+          description: Identificador único del crédito
+          example: 123456
+        creditNumber:
+          type: number
+          description: Número único del crédito
+          example: 654321
+        installmentNumber:
+          type: number
+          description: Plazo correspondiente a la cuota
+          example: 1
+        biweeklyInstallment:
+          type: number
+          description: Monto quincenal de la cuota
+          example: 100.00
+        totalDebtOutstanding:
+          type: number
+          description: Deuda total acumulada
+          example: 1000.00
+        writtenOff:
+          type: boolean
+          description: Indicador de crédito castigado
+          example: true
     GetBalanceWriteOff:
       type: object
       properties:
@@ -2511,6 +2756,10 @@ components:
           type: string
           description: Número de identificación del cliente
           example: "1-2345-5678"
+        idNumber:
+          type: string
+          description: Número de identificación del cliente
+          example: "1-2345-5678"
         message:
           type: string
           example: "User not found"
@@ -2526,6 +2775,10 @@ components:
           type: string
           description: Número de identificación del cliente
           example: "1-2345-5678"
+        idNumber:
+          type: string
+          description: Número de identificación del cliente
+          example: "1-2345-5678"
         message:
           type: string
           example: "User not found"
@@ -2533,6 +2786,10 @@ components:
       type: object
       description: Sin Header
       properties:
+        idNumber:
+          type: string
+          description: Número de identificación del cliente
+          example: "1-2345-5678"
         idNumber:
           type: string
           description: Número de identificación del cliente
@@ -2552,6 +2809,10 @@ components:
           type: string
           description: Número de identificación del cliente
           example: "1-2345-5678"
+        idNumber:
+          type: string
+          description: Número de identificación del cliente
+          example: "1-2345-5678"
         message:
           type: string
           example: "Credit not found"
@@ -2559,6 +2820,10 @@ components:
       type: object
       description: Sin Header
       properties:
+        idNumber:
+          type: string
+          description: Número de identificación del cliente
+          example: "1-2345-5678"
         idNumber:
           type: string
           description: Número de identificación del cliente
@@ -2574,6 +2839,10 @@ components:
           type: number
           description: "Código devuelto por el servicio"
           example: 404
+        idNumber:
+          type: string
+          description: Número de identificación del cliente
+          example: "1-2345-5678"
         idNumber:
           type: string
           description: Número de identificación del cliente
@@ -2633,6 +2902,8 @@ components:
         total_payment:
           type: number
           example: 20.10
+          type: number
+          example: 20.10
           description: "Monto total del pago realizado."
         total_obligation_at_start:
           type: number
@@ -2645,9 +2916,11 @@ components:
         total_obligation_after_payment:
           type: number
           example: 218.90
+          example: 218.90
           description: "Obligación total después del pago."
         total_obligation_if_pre_cancelled:
           type: number
+          example: 218.90
           example: 218.90
           description: "Obligación total si se cancela antes del pago."
     MakePaymentPuntoPago:
@@ -2657,6 +2930,62 @@ components:
         statusCode:
           type: number
           description: "Código devuelto por el servicio"
+          example: 200
+        receiptResponse:
+          type: object
+          properties:
+            payment_date:
+              type: string
+              example: "12/28/2023, 9:47:58 a. m."
+              description: "Fecha y hora del pago."
+            collection_office:
+              type: string
+              example: "PUNTO PAGO"
+              description: "Oficina de cobro asociada al pago."
+            customer_name:
+              type: string
+              example: "Pepito Flores"
+              description: "Nombre completo del cliente."
+            id_number:
+              type: string
+              example: "9-229-1200"
+              description: "Número de identificación del cliente."
+            credit_number:
+              type: number
+              example: 200231
+              description: "Número de crédito asociado al pago."
+            transaction_number:
+              type: string
+              example: "60b7509715a82214"
+              description: "Número de transacción del pago."
+            payment_method:
+              type: string
+              example: "PUNTO PAGO"
+              description: "Método de pago utilizado."
+            cashier_id:
+              type: string
+              example: "N/A"
+              description: "Identificación del cajero que procesó el pago."
+            total_payment:
+              type: number
+              example: 20.10
+              description: "Monto total del pago realizado."
+            total_obligation_at_start:
+              type: number
+              example: 300
+              description: Obligación total al inicio del proceso de pago.
+            total_obligation_before_payment:
+              type: number
+              example: 219
+              description: "Obligación total antes del pago."
+            total_obligation_after_payment:
+              type: number
+              example: 218.90
+              description: "Obligación total después del pago."
+            total_obligation_if_pre_cancelled:
+              type: number
+              example: 218.90
+              description: "Obligación total si se cancela antes del pago."
           example: 200
         receiptResponse:
           type: object
@@ -3043,6 +3372,14 @@ components:
           description: Cuota correspondiente al plan de financiamiento
           type: number
           example: 10.50
+        chargesFlag:
+          description: Indicador de cargos aplicados en el desembolso
+          type: boolean
+          example: true
+        installment:
+          description: Cuota correspondiente al plan de financiamiento
+          type: number
+          example: 10.50
         client:
           type: object
           properties:
@@ -3069,6 +3406,36 @@ components:
           type: string
           example: "Comercio con crédito parcial inhabilitado"
           description: Información adicional del desembolso
+        commissionInfo:
+          type: object
+          description: La información de comisión aparecerá solo si el código QR ha sido consumido y aceptado por el cliente final.
+          properties:
+            installmentsPlanInMonths:
+              type: number
+              example: 12
+              description: Plazo de cuotas en meses
+            commissionPercentage:
+              oneOf:
+                - type: string
+                - type: "null"
+              example: "10%"
+              description: ITBMS del monto de comisión
+            commissionAmount:
+              oneOf:
+                - type: number
+                - type: "null"
+              example: 100
+              description: Monto de comisión sin ITBMS
+            commissionITBMS:
+              type: number
+              example: 7
+              description: Porcentaje de comisión
+            commissionTotalAmount:
+              oneOf:
+                - type: number
+                - type: "null"
+              example: 107
+              description: Monto total de comisión
         commissionInfo:
           type: object
           description: La información de comisión aparecerá solo si el código QR ha sido consumido y aceptado por el cliente final.
@@ -3248,6 +3615,70 @@ components:
         message:
           type: string
           example: "Error al cancelar el crédito asociado a la transacción"
+    CancelCredit:
+      type: object
+      description: Sin Header
+      properties:
+        transactionId:
+          type: string
+          example: "64cb0b3030b6e6d24b613553"
+        message:
+          type: string
+          example: "Transacción anulada exitosamente"
+    CancelCreditNoParameters:
+      type: object
+      description: Sin Header
+      properties:
+        message:
+          type: string
+          example: "Parametros no encontrados: transactionId"
+    CancelCreditForbidden:
+      type: object
+      description: Sin Header
+      properties:
+        message:
+          type: string
+          example: "Forbidden"
+    CancelCreditNotFound:
+      type: object
+      description: Sin Header
+      properties:
+        transactionId:
+          type: string
+          example: "64cb0b3030b6e6d24b613553"
+        message:
+          type: string
+          example: "Transacción no encontrada"
+    CancelCreditNotActive:
+      type: object
+      description: Sin Header
+      properties:
+        transactionId:
+          type: string
+          example: "64cb0b3030b6e6d24b613553"
+        message:
+          type: string
+          example: "El crédito asociado a la transacción no se encuentra en estado activo"
+    CancelCreditHasPayments:
+      type: object
+      description: Sin Header
+      properties:
+        transactionId:
+          type: string
+          example: "64cb0b3030b6e6d24b613553"
+        message:
+          type: string
+          example: "El crédito asociado a la transacción tiene pagos realizados"
+    CancelCreditErrorCancellingCredit:
+      type: object
+      description: Sin Header
+      properties:
+        transactionId:
+          type: string
+          example: "64cb0b3030b6e6d24b613553"
+        message:
+          type: string
+          example: "Error al cancelar el crédito asociado a la transacción"
     AuthNoHeader:
       type: object
       description: Sin Header
@@ -3313,8 +3744,16 @@ components:
           type: number
           description: ID del crédito
           example: 12345
+          description: ID del crédito
+          example: 12345
         transactionAmount:
           type: number
+          description: Monto de la transacción
+          example: 100.50
+        puntoPagoId:
+          type: string
+          description: ID de transacción Punto Pago
+          example: "60b7509715a82214"
           description: Monto de la transacción
           example: 100.50
         puntoPagoId:
@@ -3404,6 +3843,14 @@ components:
         dataQR:
           type: number
           description: "Código del QR generado"
+    Cancel_Credit:
+      type: object
+      required:
+        - transactionId
+      properties:
+        transactionId:
+          type: string
+          description: "ID de transaction del crédito"
     Cancel_Credit:
       type: object
       required:
@@ -3560,7 +4007,14 @@ components:
           description: Callback URL de notificación de eventos
           example: "https://example.com/event"
         externalMerchant:
+        externalMerchant:
           type: string
+          description: Nombre del comercio externo no registrado en Crediviva.
+          example: "External Merchant"
+        exrernalMerchantImageUrl:
+          type: string
+          description: URL de la imagen del comercio externo no registrado en Crediviva.
+          example: "http://example.com/merchant-logo.png"
           description: Nombre del comercio externo no registrado en Crediviva.
           example: "External Merchant"
         exrernalMerchantImageUrl:
@@ -3585,6 +4039,30 @@ components:
         redirectUrl:
           type: string
           example: "https://client.crediviva.com.pa/integrations/123ABC/orders/123456-ABCDE"
+    eCommerceOrdersCreateResponseWithExternalMerchant:
+      type: object
+      properties:
+        commerce:
+          type: string
+          example: "123ABC"
+        externalOrderId:
+          type: string
+          example: "123456-ABCDE"
+        amount:
+          type: number
+          example: 100
+        status:
+          type: string
+          example: "IN_PROGRESS"
+        redirectUrl:
+          type: string
+          example: "https://client.crediviva.com.pa/integrations/123ABC/orders/123456-ABCDE"
+        externalMerchant:
+          type: string
+          example: "External Merchant"
+        externalMerchantImageUrl:
+          type: string
+          example: "http://example.com/merchant-logo.png"
     eCommerceOrdersCreateResponseWithExternalMerchant:
       type: object
       properties:
@@ -4427,6 +4905,469 @@ components:
   # =====================================================
   # REQUEST BODIES
   # =====================================================
+    consultorIsPendingConsultantResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            status:
+              type: string
+              description: El cliente no tiene una cuenta en Crediviva. Para poder consultar su pre-aprobación debe seleccionar el medio a través del cual desea realizar su validación de identidad.
+              example: "IS_PENDING_CONSULTANT"
+            webapp:
+              type: string
+              description: URL de la aplicación web asociada.
+              example: "https://kubbesa-9ac21--staging-hoa6mss6.web.app/#"
+            record:
+              type: object
+              properties:
+                insertedId:
+                  type: string
+                  description: ID del registro insertado.
+                  example: "67523fb3c9953f7fad060b45"
+    consultorCreatedInquiryResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            status:
+              type: string
+              description: El cliente no tiene una cuenta en Crediviva. Para poder consultar su pre-aprobación debe seleccionar el medio a través del cual desea realizar su validación de identidad.
+              example: "CREATED_INQUIRY"
+            record:
+              type: object
+              properties:
+                acknowledged:
+                  type: boolean
+                  description: Indica si la operación fue reconocida exitosamente.
+                  example: true
+                insertedId:
+                  type: string
+                  description: ID del registro insertado.
+                  example: "67523fb3c9953f7fad060b45"
+            webapp:
+              type: string
+              description: URL de la aplicación web asociada.
+              example: "https://kubbesa-9ac21--staging-hoa6mss6.web.app/#"
+    consultorIsApprovedResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            status:
+              type: string
+              description: El cliente se encuentra pre-aprobado. Para conocer su cupo aprobado es necesario que ingrese a la APP y complete la solicitud de crédito.
+              example: "IS_APPROVED"
+    consultorInvalidIdNumber:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            status:
+              type: string
+              description: Lo sentimos, solo se permite cédula panameña para iniciar una consulta.
+              example: "INVALID_ID_NUMBER"
+    consultorRejected:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            status:
+              type: string
+              description: El cliente se encuentra rechazado ya que no cumple con los criterios mínimos.
+              example: "IS_REJECTED"
+    consultorRejectedCSELog:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            status:
+              type: string
+              description: El cliente se encuentra rechazado ya que no cumple con los criterios mínimos.
+              example: "REJECTED_CS_LOG_USER"
+    consultorUserIsInProgress:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            status:
+              type: string
+              description: El cliente aún no ha finalizado su solicitud de crédito, para poder conocer su cupo aprobado es necesario que ingrese a la APP Crediviva para finalizar la misma.
+              example: "USER_IS_IN_PROGRESS"
+    ConsultorUserIsPending:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            status:
+              type: string
+              description: La solicitud de crédito del cliente se encuentra en análisis por parte de nuestro equipo de Créditos.
+              example: "USER_IS_PENDING"
+    consultorRejectedCreditApplication:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            status:
+              type: string
+              description: El cliente se encuentra rechazado ya que no cumple con los criterios mínimos.
+              example: "REJECTED_CREDIT_APLICATION_USER"
+    consultorApprovedCseLog:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            status:
+              type: string
+              description: El cliente se encuentra pre-aprobado. para conocer su cupo aprobado es necesario que ingrese a la APP y complete la solicitud de crédito.
+              example: "APRROVED_CS_LOG_USER"
+    consultorDisbursedAvalaible:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            user:
+              type: string
+              description: Nombre completo del usuario.
+              example: "Peter Parker"
+            amount:
+              type: number
+              description: Monto aprobado para el crédito.
+              example: 1500.75
+            status:
+              type: string
+              description: Estado de la disponibilidad del desembolso.
+              example: "DISBURSED_AVAILABLE"
+    consultorUserDisbursementActive:
+      data:
+        type: object
+        properties:
+          user:
+            type: string
+            description: Nombre completo del usuario.
+            example: "Peter Parker"
+          amount:
+            type: number
+            description: Monto aprobado para el crédito.
+            example: 1500.75
+          status:
+            type: string
+            description: El cliente tiene un cupo aprobado con Crediviva el cual actualmente se encuentra utilizado.
+            example: "USER_DISBURSEMENT_ACTIVE"
+    consultorAvalaibleForRetaking:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            user:
+              type: string
+              description: Nombre completo del usuario.
+              example: "Peter Parker"
+            amount:
+              type: number
+              description: Monto aprobado para el crédito.
+              example: 1500.75
+            status:
+              type: string
+              description: Estado de la disponibilidad para retanqueo.
+              example: "AVAILABLE_FOR_RETANKING"
+    consultorLVVDisbursementAvailable:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            status:
+              type: string
+              description: El cliente tiene un cupo aprobado con Crediviva el cual actualmente se encuentra utilizado.
+              example: LVV_DISBURSMENT_AVAILABLE
+    consultorLVVDisbursementActive:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            status:
+              type: string
+              description: El cliente tiene una cuenta con Crediviva pero es necesario que descargue la app para poder finalizar sus validaciones y actualizar su información de cupo.
+              example: LVV_DISBURSMENT_ACTIVE
+    consultorResponse400:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Cedula is required"
+    consultorResponse403:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Forbidden"
+    consultorResponse500:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Internal server error in catch"
+    consultorResponseErrorCreating500:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Error creating inquiry"
+        status:
+          type: string
+          example: "CREATED_INQUIRY_ERROR"
+    validatePhoneNumberConsultor:
+      type: object
+      required:
+        - phoneNumber
+      properties:
+        phoneNumber:
+          type: string
+          description: Número de teléfono.
+          example: "+50761112233"
+    validatePanamaPhoneNumber200:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Phone number is valid and not registered with another user"
+        isValid:
+          type: boolean
+          example: true
+    validatePanamaPhoneNumber400:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Phone number is required"
+    validatePanamaInvalidPhoneNumber400:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Invalid phone number format. Must be a valid Panama phone number."
+    validatePanamaPhoneNumber409:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Phone number is already registered with another user"
+    validatePanamaPhoneNumber500:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Internal server error"
+    sendTwilioSMSConsultor:
+      type: object
+      required:
+        - recordId
+        - type
+        - to
+      properties:
+        recordId:
+          type: string
+          description: ID del registro.
+          example: "60b7509715a82214"
+        type:
+          type: string
+          description: Tipo de mensaje.
+          enum:
+            - sms
+            - whatsapp
+          example: "sms"
+        to:
+          type: string
+          description: Número de teléfono.
+          example: "+50761112233"
+    sendTwilioSMSConsultor200:
+      type: object
+      properties:
+        message:
+          type: string
+          description: Mensaje indicando el resultado de la operación.
+          example: "Message sent successfully"
+        data:
+          type: object
+          properties:
+            body:
+              type: string
+              description: Contenido del mensaje enviado.
+              example: "Gracias por elegir a Crediviva para realizar tus compras, ingresa al siguiente link para completar tu validación de identidad y conocer tu resultado de pre-aprobación https://kubbesa-9ac21--staging-hoa6mss6.web.app/#/consultant?id=67523ad060b45fb3c9953f7f&registerByStoreDevice=false"
+            numSegments:
+              type: string
+              description: Número de segmentos del mensaje.
+              example: "5"
+            direction:
+              type: string
+              description: Dirección del mensaje (entrante o saliente).
+              example: "outbound-api"
+            from:
+              type: string
+              description: Número de origen.
+              example: "+11111111111"
+            to:
+              type: string
+              description: Número de destino.
+              example: "+50766666666"
+            dateUpdated:
+              type: string
+              format: date-time
+              description: Fecha y hora de última actualización.
+              example: "2025-01-22T21:33:50.000Z"
+            price:
+              type: string
+              nullable: true
+              description: Precio del mensaje (si aplica).
+              example: null
+            errorMessage:
+              type: string
+              nullable: true
+              description: Mensaje de error (si aplica).
+              example: null
+            uri:
+              type: string
+              description: URI del recurso.
+              example: "/2010-04-01/Accounts/accountSid/Messages/accountSid.json"
+            accountSid:
+              type: string
+              description: Identificador único de la cuenta.
+              example: "accountSid"
+            numMedia:
+              type: string
+              description: Número de elementos multimedia asociados al mensaje.
+              example: "0"
+            status:
+              type: string
+              description: Estado actual del mensaje.
+              example: "queued"
+            messagingServiceSid:
+              type: string
+              nullable: true
+              description: Identificador único del servicio de mensajería (si aplica).
+              example: null
+            sid:
+              type: string
+              description: Identificador único del mensaje.
+              example: "Sid"
+            dateSent:
+              type: string
+              format: date-time
+              nullable: true
+              description: Fecha y hora en que se envió el mensaje (si aplica).
+              example: null
+            dateCreated:
+              type: string
+              format: date-time
+              description: Fecha y hora de creación del mensaje.
+              example: "2025-01-22T21:33:50.000Z"
+            errorCode:
+              type: string
+              nullable: true
+              description: Código de error asociado al mensaje (si aplica).
+              example: null
+            priceUnit:
+              type: string
+              description: Unidad del precio.
+              example: "USD"
+            apiVersion:
+              type: string
+              description: Versión de la API utilizada.
+              example: "2010-04-01"
+            subresourceUris:
+              type: object
+              properties:
+                media:
+                  type: string
+                  description: URI de los recursos multimedia asociados.
+                  example: "/2010-04-01/Accounts/accountSid/Messages/accountSid/Media.json"
+    sendTwilioSMSConsultorRecordId400:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "recordId es requerido"
+    sendTwilioSMSConsultorTypeTo400:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Type, to, and message are required fields"
+    sendTwilioSMSConsultorInvalidType400:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Invalid message type. Must be either sms or whatsapp"
+    sendTwilioSMSConsultor403:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Forbidden"
+    sendTwilioSMSConsultor500:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Internal server error"
+    sendTwilioSMSConsultorFailSendMsg500:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Failed to send message"
+    linkUserToWS:
+      type: object
+      required:
+        - action
+        - userId
+        - env
+      properties:
+        action:
+          type: string
+          description: nombre de la conexión.
+          example: "createConnection"
+        userId:
+          type: string
+          description: id del registro del cliente.
+          example: "14526551asdasd"
+        env:
+          type: string
+          description: Ambiente.
+          example: "production"
+    responseWSClientApproved:
+      type: object
+      properties:
+        userId:
+          type: string
+          example: "5a4sd6a5sda6a54"
+        status:
+          type: string
+          example: APROBADO
+    responseWSClientRejected:
+      type: object
+      properties:
+        userId:
+          type: string
+          example: "5a4sd6a5sda6a54"
+        status:
+          type: string
+          example: RECHAZADO
   requestBodies:
     qr:
       description: Código QR para procesar
@@ -4469,16 +5410,40 @@ components:
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/linkUserToWSBody"
+            typedescription: Solicitud de Crédito
+            title: "title rb disb"
+            $ref: "#/components/schemas/Invoice"
     validatePanamaPhoneNumber:
-      description: Validar número de teléfono panameño
       content:
         application/json:
           schema:
+            description: validate-panama-phone-number
+            title: "Request Body"
             $ref: "#/components/schemas/validatePhoneNumberConsultor"
     sendTwilioSMSConsultor:
-      description: Enviar SMS via Twilio
       content:
         application/json:
           schema:
+            description: send-twilio-sms-consultor
+            title: "Request Body"
             $ref: "#/components/schemas/sendTwilioSMSConsultor"
+    linkUserToWS:
+      content:
+        application/json:
+          schema:
+            description: link-user-to-ws
+            title: "Request Body"
+            $ref: "#/components/schemas/linkUserToWS"
+  securitySchemes:
+    bearerHttpAuthentication:
+      type: http
+      scheme: Bearer
+      bearerFormat: JWT
+      description: >-
+        `JWT` Token en el header `Authorization`, el cual concede de la autenticación necesaria para consumir los recursos expuestos para las operaciones descritas en el API que utilicen este método de autenticación.
+    defaultApiKey:
+      description: >
+        API-Key suministrado por Crediviva, el cual concede de la autenticación necesaria para consumir los recursos expuestos para las operaciones descritas en el API que utilicen este método de autenticación.
+      type: apiKey
+      name: x-api-key
+      in: header
