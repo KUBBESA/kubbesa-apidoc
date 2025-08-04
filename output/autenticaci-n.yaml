@@ -1,0 +1,103 @@
+openapi: 3.0.1
+info:
+  title: API Autenticación
+  version: 1.0.0
+servers:
+  - url: https://api.kubbesa.net/staging
+    description: Servidor staging
+    x-displayName: staging
+paths:
+  /auth:
+    get:
+      tags:
+        - Autenticación
+      summary: Tokens de autenticación
+      description: Retorna los tokens asociados al usaurio para acceder a los recursos
+        del API
+      operationId: auth
+      parameters:
+        - name: Authorization
+          in: header
+          description: Basic base64-encoded string de username:password
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Operación exitosa
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Auth"
+        "400":
+          description: Sin autenticación
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/AuthNoHeader"
+                  - $ref: "#/components/schemas/AuthRefreshInvalid"
+  /auth/refresh:
+    get:
+      tags:
+        - Autenticación
+      summary: Refrescar Tokens de autenticación
+      description: Retorna los nuevos tokens asociados al usaurio para acceder a los
+        recursos del API
+      operationId: authRefresh
+      parameters:
+        - name: Authorization
+          in: header
+          description: Basic base64-encoded string del refreshToken
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Operación exitosa
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Auth"
+        "400":
+          description: Sin autenticación
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/AuthNoHeader"
+                  - $ref: "#/components/schemas/AuthInvalid"
+components:
+  schemas:
+    Auth:
+      type: object
+      properties:
+        idToken:
+          type: string
+          description: Token Bearer de autenticación para utilizar en los endpoints que
+            requieran de autenticación. Expira cada hora
+        refreshtToken:
+          type: string
+          description: Utilizado en el endpoint /auth/refresh para obtener un idToken
+            renovado
+    AuthNoHeader:
+      type: object
+      description: Sin Header
+      properties:
+        message:
+          type: string
+          example: No Auth info provided
+    AuthRefreshInvalid:
+      type: object
+      description: Header inválido
+      properties:
+        error:
+          type: string
+          example: Invalid refresh token
+    AuthInvalid:
+      type: object
+      description: Header inválido
+      properties:
+        error:
+          type: string
+          example: Incorrect username or password.

@@ -1,0 +1,199 @@
+openapi: 3.0.1
+info:
+  title: API Desembolsos
+  version: 1.0.0
+servers:
+  - url: https://api.kubbesa.net/staging
+    description: Servidor staging
+    x-displayName: staging
+paths:
+  /qr:
+    post:
+      tags:
+        - Desembolsos
+      summary: Consumir código QR
+      description: Este recurso valida que el código QR sea válido aspectos como la
+        fecha de expiración del código QR y perteneciente al comercio.
+      operationId: scanQr
+      requestBody:
+        $ref: "#/components/requestBodies/qr"
+      responses:
+        "200":
+          description: Operación exitosa
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/qrResponse"
+        "400":
+          description: Código QR no sumunistrado
+        "401":
+          description: Sin autenticación
+        "403":
+          description: Sin autorización
+        "409":
+          description: Código QR Inválido
+        "500":
+          description: Error de Servidor
+      security:
+        - bearerHttpAuthentication:
+            - /qr:read
+  /qr/cancel:
+    post:
+      operationId: cancel-qr
+      tags:
+        - Desembolsos
+      summary: Cancelar código QR
+      description: Este recurso cancela un código QR perteneciente al comercio previo
+        a su estado activo.
+      requestBody:
+        $ref: "#/components/requestBodies/qrCancel"
+      responses:
+        "200":
+          description: Operación exitosa
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/qrCancelResponse"
+        "400":
+          description: Código QR no sumunistrado
+        "401":
+          description: Sin autenticación
+        "403":
+          description: Sin autorización
+        "404":
+          description: Código QR no encontrado
+        "500":
+          description: Error de Servidor
+      security:
+        - bearerHttpAuthentication:
+            - /qr/cancel:write
+  /qr/status:
+    get:
+      tags:
+        - Desembolsos
+      summary: Status Código QR
+      description: Este recurso devuelve el status de un código QR.
+      operationId: QrStatus
+      parameters:
+        - name: dataQR
+          in: query
+          description: Código QR consumido
+          required: true
+          schema:
+            type: number
+      responses:
+        "200":
+          description: Operación exitosa
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/qrStatusResponse"
+        "400":
+          description: Código QR no suministrado
+        "401":
+          description: Sin autenticación
+        "403":
+          description: Sin autorización
+        "500":
+          description: Error de Servidor
+      security:
+        - bearerHttpAuthentication:
+            - /qr/status:read
+  /invoice:
+    post:
+      tags:
+        - Desembolsos
+      summary: Enviar factura
+      description: Este recurso acepta una factura por parte del comercio
+      operationId: invoice
+      requestBody:
+        $ref: "#/components/requestBodies/invoice"
+      responses:
+        "200":
+          description: Operación exitosa
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InvoiceResponse"
+        "401":
+          description: Sin autenticación
+        "403":
+          description: Sin autorización
+        "500":
+          description: Error de Servidor
+      security:
+        - bearerHttpAuthentication:
+            - /invoice:write
+components:
+  schemas:
+    qrResponse:
+      type: object
+      properties:
+        dataQR:
+          description: Código QR / Pin
+          type: number
+          example: 123456
+        transactionId:
+          description: ID único de transacción
+          type: string
+          example: 64cb0b3030b6e6d24b613553
+        status:
+          enum:
+            - OK
+            - EXPIRED
+            - CANCELLED
+            - CREDIT_NOT_FOUND
+            - INSUFICIENT_CREDIT
+            - INVALID_AMOUNT
+            - INVALID_QR
+        message:
+          type: string
+          example: Message example
+    qrCancelResponse:
+      type: object
+      properties:
+        dataQR:
+          description: Código QR / Pin
+          type: number
+          example: 123456
+        transactionId:
+          description: ID único de transacción
+          type: string
+          example: 64cb0b3030b6e6d24b613553
+        status:
+          type: string
+          example: CANCELLED
+    qrStatusResponse:
+      type: object
+      properties:
+        dataQR:
+          description: Código QR / Pin
+          type: number
+          example: 123456
+        transactionId:
+          description: ID único de transacción
+          type: string
+          example: 64cb0b3030b6e6d24b613553
+        status:
+          enum:
+            - ACTIVE
+            - APPROVED
+            - CANCELLED
+            - EXPIRED
+            - PENDING
+    InvoiceResponse:
+      type: object
+      properties:
+        dataQR:
+          type: number
+        message:
+          type: string
+  securitySchemes:
+    bearerHttpAuthentication:
+      type: http
+      scheme: Bearer
+      bearerFormat: JWT
+      description: "`JWT` Token en el header `Authorization`, el cual concede de la
+        autenticación necesaria para consumir los recursos expuestos para las
+        operaciones descritas en el API que utilicen este método de
+        autenticación."

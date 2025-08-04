@@ -589,7 +589,7 @@ paths:
     get:
       tags:
         - Autenticación
-      summary: Tokens de autenticacīón
+      summary: Tokens de autenticación
       description: Retorna los tokens asociados al usaurio para acceder a los recursos del API
       operationId: auth
       parameters:
@@ -618,7 +618,7 @@ paths:
     get:
       tags:
         - Autenticación
-      summary: Refrescar Tokens de autenticacīón
+      summary: Refrescar Tokens de autenticación
       description: Retorna los nuevos tokens asociados al usaurio para acceder a los recursos del API
       operationId: authRefresh
       parameters:

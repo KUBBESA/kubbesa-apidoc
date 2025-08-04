@@ -17,5 +17,10 @@
   "bugs": {
     "url": "https://github.com/KUBBESA/kubbesa-apidoc/issues"
   },
-  "homepage": "https://github.com/KUBBESA/kubbesa-apidoc#readme"
+  "homepage": "https://github.com/KUBBESA/kubbesa-apidoc#readme",
+  "dependencies": {
+    "fs": "^0.0.1-security",
+    "lodash": "^4.17.21",
+    "yaml": "^2.7.1"
+  }
 }

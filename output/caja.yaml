@@ -1,0 +1,462 @@
+openapi: 3.0.1
+info:
+  title: API CAJA
+  version: 1.0.0
+servers:
+  - url: https://api.kubbesa.net/staging
+    description: Servidor staging
+    x-displayName: staging
+paths:
+  /api-caja/get-balance:
+    post:
+      tags:
+        - CAJA
+      summary: Obtener saldo del cliente
+      description: Obtiene el saldo asociado al cliente
+      operationId: get-balance
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Get_Balance"
+      security:
+        - defaultApiKey:
+            - /api-caja/get-balance:read
+      responses:
+        "200":
+          description: Operación exitosa
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/GetBalance"
+                  - $ref: "#/components/schemas/GetBalanceAlreadyPaid"
+                  - $ref: "#/components/schemas/GetBalanceWriteOff"
+        "400":
+          description: No se ha proporcionado el número de cédula en la solicitud
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GetBalanceNoIdNumber"
+        "403":
+          description: Sin permisos para acceder al recurso
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GetBalanceForbidden"
+        "404":
+          description: Recurso no encontrado
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/GetBalanceUserNotFound"
+                  - $ref: "#/components/schemas/GetBalanceCreditNotFound"
+                  - $ref: "#/components/schemas/GetBalanceInstallmentsNotFound"
+        "500":
+          description: Error al conectarse a base de datos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GetBalanceErrorConnectingDb"
+  /api-caja/get-payment-methods:
+    get:
+      tags:
+        - CAJA
+      summary: Obtener métodos de pago disponibles
+      description: Obtiene la lista de métodos de pago disponibles
+      operationId: get-payment-methods
+      security:
+        - defaultApiKey:
+            - /api-caja/get-payment-methods:read
+      responses:
+        "200":
+          description: Operación exitosa
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GetPaymentMethods"
+        "400":
+          description: No se ha proporcionado los parametros correspondientes
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GetPaymentMethods"
+        "500":
+          description: Error al obtener los metodos de pago
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GetPaymentMethodsError"
+  /api-caja/make-payment:
+    post:
+      tags:
+        - CAJA
+      summary: Realizar un pago
+      description: Procesa un pago asociado al cliente
+      operationId: make-payment
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Make_Payment"
+      security:
+        - defaultApiKey:
+            - /api-caja/make-payment:write
+      responses:
+        "200":
+          description: Operación exitosa
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MakePayment"
+        "400":
+          description: No se ha proporcionado los parametros correspondientes
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MakePaymentNoParameters"
+        "403":
+          description: Sin permisos para acceder al recurso
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MakePaymentForbidden"
+        "404":
+          description: Recurso no encontrado
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/MakePaymentUserNotFound"
+                  - $ref: "#/components/schemas/MakePaymentCreditNotFound"
+        "422":
+          description: Error al procesar la solicitud
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/MakePaymentErroTransactionAmount"
+        "500":
+          description: Error al realizar la solicitud
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/MakePaymentErroConnectingDb"
+                  - $ref: "#/components/schemas/MakePaymentErroGettingReceipt"
+                  - $ref: "#/components/schemas/MakePaymentErroSendingEmail"
+                  - $ref: "#/components/schemas/MakePaymentErroMakingPayment"
+                  - $ref: "#/components/schemas/MakePaymentErroGettingTransaction"
+components:
+  schemas:
+    Get_Balance:
+      type: object
+      required:
+        - idNumber
+      properties:
+        idNumber:
+          type: string
+          description: formato X-XXX-XXXX
+    GetBalance:
+      type: object
+      properties:
+        idNumber:
+          type: string
+          description: Número de identificación del cliente
+          example: 1-2345-5678
+        loanId:
+          type: number
+          description: Identificador único del crédito
+          example: 123456
+        creditNumber:
+          type: number
+          description: Número único del crédito
+          example: 654321
+        installmentNumber:
+          type: number
+          description: Plazo correspondiente a la cuota
+          example: 1
+        monthlyInstallment:
+          type: number
+          description: Monto inicial de la cuota
+          example: 100
+        amountPaid:
+          type: number
+          description: Monto pagado hasta el momento de la cuota
+          example: 25
+        remainingAmount:
+          type: number
+          description: Deuda pendiente de la cuota
+          example: 75
+        totalDebt:
+          type: number
+          description: Deuda total acumulada
+          example: 1000
+        dueDate:
+          type: string
+          description: Fecha en la que la cuota vence
+          example: 31/7/2024
+    GetBalanceAlreadyPaid:
+      type: object
+      properties:
+        idNumber:
+          type: string
+          description: Número de identificación del cliente
+          example: 1-2345-5678
+        loanId:
+          type: number
+          description: Identificador único del crédito
+          example: 123456
+        creditNumber:
+          type: number
+          description: Número único del crédito
+          example: 654321
+        message:
+          type: string
+          example: Credit fully paid
+    GetBalanceWriteOff:
+      type: object
+      properties:
+        idNumber:
+          type: string
+          description: Número de identificación del cliente
+          example: 1-2345-5678
+        loanId:
+          type: number
+          description: Identificador único del crédito
+          example: 123456
+        creditNumber:
+          type: number
+          description: Número único del crédito
+          example: 654321
+        installmentNumber:
+          type: number
+          description: Plazo correspondiente a la cuota
+          example: 1
+        monthlyInstallment:
+          type: number
+          description: Monto inicial de la cuota
+          example: 100
+        totalDebt:
+          type: number
+          description: Deuda total acumulada
+          example: 1000
+    GetBalanceNoIdNumber:
+      type: object
+      description: Sin Header
+      properties:
+        message:
+          type: string
+          example: IdNumber is missing
+    GetBalanceForbidden:
+      type: object
+      description: Sin Header
+      properties:
+        message:
+          type: string
+          example: Forbidden
+    GetBalanceUserNotFound:
+      type: object
+      description: Sin Header
+      properties:
+        idNumber:
+          type: string
+          description: Número de identificación del cliente
+          example: 1-2345-5678
+        message:
+          type: string
+          example: User not found
+    GetBalanceCreditNotFound:
+      type: object
+      description: Sin Header
+      properties:
+        idNumber:
+          type: string
+          description: Número de identificación del cliente
+          example: 1-2345-5678
+        message:
+          type: string
+          example: Credit not found
+    GetBalanceInstallmentsNotFound:
+      type: object
+      description: Sin Header
+      properties:
+        idNumber:
+          type: string
+          description: Número de identificación del cliente
+          example: 1-2345-5678
+        message:
+          type: string
+          example: Installments not found
+    GetBalanceErrorConnectingDb:
+      type: object
+      description: Sin Header
+      properties:
+        message:
+          type: string
+          example: Error when connecting db
+    GetPaymentMethods:
+      description: Sin Header
+      properties:
+        paymentMethods:
+          type: string
+          description: método de pago
+    GetPaymentMethodsError:
+      type: object
+      description: Sin Header
+      properties:
+        message:
+          type: string
+          example: Error getting payment methods
+    Make_Payment:
+      type: object
+      required:
+        - creditId
+        - transactionAmount
+        - paymentTypeId
+        - paymentMethod
+      properties:
+        creditId:
+          type: number
+        transactionAmount:
+          type: number
+        paymentTypeId:
+          type: number
+        paymentMethod:
+          type: string
+    MakePayment:
+      type: object
+      description: Sin Header
+      properties:
+        payment_date:
+          type: string
+          example: 12/28/2023, 9:47:58 a. m.
+          description: Fecha y hora del pago.
+        collection_office:
+          type: string
+          example: PANAMA STORE
+          description: Oficina de cobro asociada al pago.
+        customer_name:
+          type: string
+          example: Pepito Flores
+          description: Nombre completo del cliente.
+        id_number:
+          type: string
+          example: 9-229-1200
+          description: Número de identificación del cliente.
+        credit_number:
+          type: number
+          example: 200231
+          description: Número de crédito asociado al pago.
+        transaction_number:
+          type: string
+          example: 60b7509715a82214
+          description: Número de transacción del pago.
+        payment_method:
+          type: string
+          example: RAP
+          description: Método de pago utilizado.
+        cashier_id:
+          type: string
+          example: 8aa9dc91-f09a-48a4-844b-3178d3610a28
+          description: Identificación del cajero que procesó el pago.
+        total_payment:
+          type: number
+          example: 20.1
+          description: Monto total del pago realizado.
+        total_obligation_at_start:
+          type: number
+          example: 300
+          description: Obligación total al inicio del proceso de pago.
+        total_obligation_before_payment:
+          type: number
+          example: 219
+          description: Obligación total antes del pago.
+        total_obligation_after_payment:
+          type: number
+          example: 218.9
+          description: Obligación total después del pago.
+        total_obligation_if_pre_cancelled:
+          type: number
+          example: 218.9
+          description: Obligación total si se cancela antes del pago.
+    MakePaymentNoParameters:
+      type: object
+      description: Sin Header
+      properties:
+        message:
+          type: string
+          example: "Missing parameters: parameters"
+    MakePaymentForbidden:
+      type: object
+      description: Sin Header
+      properties:
+        message:
+          type: string
+          example: Forbidden
+    MakePaymentUserNotFound:
+      type: object
+      description: Sin Header
+      properties:
+        message:
+          type: string
+          example: User not found
+    MakePaymentCreditNotFound:
+      type: object
+      description: Sin Header
+      properties:
+        message:
+          type: string
+          example: Credit not found
+    MakePaymentErroTransactionAmount:
+      type: object
+      description: Sin Header
+      properties:
+        message:
+          type: string
+          example: Transaction amount must be greater than zero
+    MakePaymentErroConnectingDb:
+      type: object
+      description: Sin Header
+      properties:
+        message:
+          type: string
+          example: Error when connecting db
+    MakePaymentErroGettingReceipt:
+      type: object
+      description: Sin Header
+      properties:
+        message:
+          type: string
+          example: Error getting receipt
+    MakePaymentErroSendingEmail:
+      type: object
+      description: Sin Header
+      properties:
+        message:
+          type: string
+          example: Error sending email
+    MakePaymentErroMakingPayment:
+      type: object
+      description: Sin Header
+      properties:
+        message:
+          type: string
+          example: Error making payment
+    MakePaymentErroGettingTransaction:
+      type: object
+      description: Sin Header
+      properties:
+        message:
+          type: string
+          example: Error getting transaction
+  securitySchemes:
+    defaultApiKey:
+      description: >
+        API-Key suministrado por Crediviva, el cual concede de la autenticación
+        necesaria para consumir los recursos expuestos para las operaciones
+        descritas en el API que utilicen este método de autenticación.
+      type: apiKey
+      name: x-api-key
+      in: header

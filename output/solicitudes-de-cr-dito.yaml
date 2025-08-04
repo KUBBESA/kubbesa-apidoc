@@ -1,0 +1,130 @@
+openapi: 3.0.1
+info:
+  title: API Solicitudes de Crédito
+  version: 1.0.0
+servers:
+  - url: https://api.kubbesa.net/staging
+    description: Servidor staging
+    x-displayName: staging
+paths:
+  /creditapplications:
+    get:
+      tags:
+        - Solicitudes de Crédito
+      summary: Listar solicitudes de crédito
+      description: Retorna la lista de solicitudes de crédito asociados al comercio.
+      operationId: getCreditApplications
+      responses:
+        "200":
+          description: Operación exitosa
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Credit_Application"
+        "401":
+          description: Sin autenticación
+        "403":
+          description: Sin autorización
+        "500":
+          description: Error de Servidor
+      security:
+        - bearerHttpAuthentication:
+            - /creditapplications:read
+  /creditapplications/{id}:
+    get:
+      tags:
+        - Solicitudes de Crédito
+      summary: Buscar solicitud de crédito por Id
+      description: Retorna la solicitud de crédito por el Id suministrado.
+      operationId: getCreditApplicationById
+      parameters:
+        - name: Autorización
+          in: header
+          description: Token de autorización
+          required: true
+          schema:
+            type: string
+        - name: id
+          in: path
+          description: id de la solicitud de crédito
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+            application/xml:
+              schema:
+                $ref: "#/components/schemas/User"
+        "400":
+          description: Id suministrado inválido
+        "401":
+          description: No authenticado
+        "403":
+          description: No autorizado
+        "404":
+          description: Usuario no encontrado
+      security:
+        - bearerHttpAuthentication:
+            - /creditapplications/{id}:read
+components:
+  schemas:
+    Credit_Application:
+      type: object
+      discriminator:
+        propertyName: creditApplicationType
+      properties:
+        id:
+          description: Credit_Application ID
+          $ref: "#/components/schemas/Id"
+        userId:
+          description: Documento de identificación del cliente
+          type: string
+          example: null
+        status:
+          type: string
+          description: Credit_Application status in the store
+          enum:
+            - APPROVADO
+            - PENDIENTE
+            - RECHAZADO
+    Id:
+      type: string
+      readOnly: true
+    User:
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        email:
+          description: Correo electrónico del usuario
+          type: string
+          format: email
+          example: dev@crediviva.com.pa
+        given_name:
+          description: Nombres del usuario
+          type: string
+          example: Dev
+        familly_name:
+          description: Apellidos del usuario
+          type: string
+          example: Crediviva
+        status:
+          description: Estado del usuario
+          type: string
+          enum:
+            - ACTIVO
+            - INACTIVO
+  securitySchemes:
+    bearerHttpAuthentication:
+      type: http
+      scheme: Bearer
+      bearerFormat: JWT
+      description: "`JWT` Token en el header `Authorization`, el cual concede de la
+        autenticación necesaria para consumir los recursos expuestos para las
+        operaciones descritas en el API que utilicen este método de
+        autenticación."

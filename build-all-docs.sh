@@ -1,0 +1,9 @@
+redocly build-docs output/autenticaci-n.yaml -o public/docs/autenticaci-n.html
+redocly build-docs output/caja.yaml -o public/docs/caja.html
+redocly build-docs output/consultor-de-cupo.yaml -o public/docs/consultor-de-cupo.html
+redocly build-docs output/desembolsos.yaml -o public/docs/desembolsos.html
+redocly build-docs output/e-commerce.yaml -o public/docs/e-commerce.html
+redocly build-docs output/pull.yaml -o public/docs/pull.html
+redocly build-docs output/punto-pago.yaml -o public/docs/punto-pago.html
+redocly build-docs output/red-digital.yaml -o public/docs/red-digital.html
+redocly build-docs output/solicitudes-de-cr-dito.yaml -o public/docs/solicitudes-de-cr-dito.html

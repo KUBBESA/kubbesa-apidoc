@@ -1,0 +1,589 @@
+openapi: 3.0.1
+info:
+  title: API PULL
+  version: 1.0.0
+servers:
+  - url: https://api.kubbesa.net/staging
+    description: Servidor staging
+    x-displayName: staging
+paths:
+  /pull/create-qr:
+    post:
+      tags:
+        - PULL
+      summary: Generar código QR
+      description: Genera el código qr que será escaneado por el cliente
+      operationId: create-qr-code
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Create_Qr_Code"
+      security:
+        - bearerHttpAuthentication:
+            - /pull/create-qr:write
+      responses:
+        "200":
+          description: Operación exitosa
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateQrCode"
+        "400":
+          description: La solicitud no puede ser procesada debido a uno o más errores en
+            los parámetros enviados.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/CreateQrCodeNoParameters"
+                  - $ref: "#/components/schemas/CreateQrCodeWrongType"
+        "403":
+          description: Sin permisos para acceder al recurso
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateQrCodeForbidden"
+        "404":
+          description: Recurso no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateQrCodeCommerceNotFound"
+        "422":
+          description: Error al procesar la solicitud
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateQrCodeErrorTransactionAmount"
+        "500":
+          description: Error al realizar la solicitud
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/CreateQrCodeErrorConnectingDb"
+                  - $ref: "#/components/schemas/CreateQrCodeErrorCreatingQR"
+  /pull/get-info-qr:
+    post:
+      tags:
+        - PULL
+      summary: Obtener información código QR
+      description: Obtiene la información del estado del QR y desembolso
+      operationId: get-info-qr
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Get_Info_Qr"
+      security:
+        - bearerHttpAuthentication:
+            - /pull/get-info-qr:read
+      responses:
+        "200":
+          description: Operación exitosa
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GetInfoQr"
+        "400":
+          description: No se ha proporcionado los parametros correspondientes
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GetInfoQrNoParameters"
+        "403":
+          description: Sin permisos para acceder al recurso
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GetInfoQrForbidden"
+        "404":
+          description: Recurso no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GetInfoQrDisbursementNotFound"
+        "500":
+          description: Error al realizar la solicitud
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/GetInfoQrErrorConnectingDb"
+                  - $ref: "#/components/schemas/GetInfoQrErrorGettingQR"
+  /pull/cancel-qr:
+    post:
+      tags:
+        - PULL
+      summary: Cancelar código QR
+      description: Cancela el código QR generado
+      operationId: cancel-qr-pull
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Cancel_Qr"
+      security:
+        - bearerHttpAuthentication:
+            - /pull/cancel-qr:write
+      responses:
+        "200":
+          description: Operación exitosa
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CancelQr"
+        "400":
+          description: No se ha proporcionado los parametros correspondientes
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CancelQrNoParameters"
+        "403":
+          description: Sin permisos para acceder al recurso
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CancelQrForbidden"
+        "404":
+          description: Recurso no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CancelQrNotFound"
+        "500":
+          description: Error al realizar la solicitud
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/CancelQrErrorConnectingDb"
+                  - $ref: "#/components/schemas/CancelQrErrorCancellingQR"
+  /pull/cancel-credit:
+    post:
+      tags:
+        - PULL
+      summary: Cancelar crédito
+      description: Cancela el crédito activado asociado a la transacción
+      operationId: cancel-credit-pull
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Cancel_Credit"
+      security:
+        - bearerHttpAuthentication:
+            - /pull/cancel-credit:write
+      responses:
+        "200":
+          description: Operación exitosa
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CancelCredit"
+        "400":
+          description: No se ha proporcionado los parametros correspondientes
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CancelCreditNoParameters"
+        "403":
+          description: Sin permisos para acceder al recurso
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CancelCreditForbidden"
+        "404":
+          description: Recurso no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CancelCreditNotFound"
+        "409":
+          description: Crédito no puede ser cancelado
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/CancelCreditNotActive"
+                  - $ref: "#/components/schemas/CancelCreditHasPayments"
+        "500":
+          description: Error al cancelar la transacción
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CancelCreditErrorCancellingCredit"
+components:
+  schemas:
+    Create_Qr_Code:
+      type: object
+      required:
+        - amount
+        - lineas
+        - metaData
+      properties:
+        amount:
+          type: number
+          description: Monto de la compra
+        lineas:
+          type: array
+          items:
+            type: string
+          description: Descripción del producto comprado
+          example:
+            - CELULARES
+            - COMPUTADORAS
+            - LINEA BLANCA
+            - ELECTRODOMÉSTICOS
+            - INDUMENTARIA
+            - CALZADO
+        metaData:
+          type: object
+          example:
+            name: John
+            lastName: Doe
+            email: john-doe@gmail.com
+          description: Información adicional útil para identificar al usuario que efectúa
+            la transacción. No se limita a los ejemplos proporcionados.
+    CreateQrCode:
+      type: object
+      description: Sin Header
+      properties:
+        dataQR:
+          type: number
+          example: 503212
+          description: Código generado para ser escaneado en el qr
+        credito:
+          type: number
+          example: 300692
+          description: Identificador del crédito
+    CreateQrCodeNoParameters:
+      type: object
+      description: Sin Header
+      properties:
+        message:
+          type: string
+          example: "Missing parameters: amount"
+    CreateQrCodeWrongType:
+      type: object
+      description: Sin Header
+      properties:
+        message:
+          type: string
+          example: Amount must be a number
+    CreateQrCodeForbidden:
+      type: object
+      description: Sin Header
+      properties:
+        message:
+          type: string
+          example: Forbidden
+    CreateQrCodeCommerceNotFound:
+      type: object
+      description: Sin Header
+      properties:
+        message:
+          type: string
+          example: Commerce not found
+    CreateQrCodeErrorTransactionAmount:
+      type: object
+      description: Sin Header
+      properties:
+        message:
+          type: string
+          example: Transaction amount must be greater than 100
+    CreateQrCodeErrorConnectingDb:
+      type: object
+      description: Sin Header
+      properties:
+        message:
+          type: string
+          example: Error when connecting db
+    CreateQrCodeErrorCreatingQR:
+      type: object
+      description: Sin Header
+      properties:
+        message:
+          type: string
+          example: Error creating QR
+    Get_Info_Qr:
+      type: object
+      required:
+        - dataQR
+      properties:
+        dataQR:
+          type: number
+          description: Código del QR generado
+    GetInfoQr:
+      type: object
+      description: Respuesta para obtener información de un código QR. La información
+        de comisión aparecerá solo si el código QR ha sido consumido y aceptado
+        por el cliente final.
+      properties:
+        dataQR:
+          type: number
+          example: 503212
+          description: Código generado
+        transactionId:
+          description: ID único de transacción
+          type: string
+          example: 64cb0b3030b6e6d24b613553
+        disbursementStatus:
+          type: object
+          properties:
+            currentStatus:
+              enum:
+                - PENDING
+                - IN_PROGRESS
+                - VALIDATING_IDENTITY
+                - PENDING_SIGNATURE
+                - SIGNATURE_COMPLETED
+                - REJECTED
+                - CANCELLED
+              type: string
+              example: IN_PROGRESS
+              description: Estado actual del QR y desembolso
+            description:
+              type: string
+              example: Código QR a la espera de escaneo
+              description: Descripción del estado del desembolso
+        chargesFlag:
+          description: Indicador de cargos aplicados en el desembolso
+          type: boolean
+          example: true
+        installment:
+          description: Cuota correspondiente al plan de financiamiento
+          type: number
+          example: 10.5
+        client:
+          type: object
+          properties:
+            idNumber:
+              type: string
+              example: "1234567890"
+              description: Número de identificación del cliente
+            financeDetails:
+              type: object
+              properties:
+                requestedAmount:
+                  type: number
+                  example: 1000
+                  description: Monto solicitado
+                availableBalance:
+                  type: number
+                  example: 500
+                  description: Saldo disponible del cliente
+                remainingAmount:
+                  type: number
+                  example: 500
+                  description: Monto restante
+        additionalInfo:
+          type: string
+          example: Comercio con crédito parcial inhabilitado
+          description: Información adicional del desembolso
+        commissionInfo:
+          type: object
+          description: La información de comisión aparecerá solo si el código QR ha sido
+            consumido y aceptado por el cliente final.
+          properties:
+            installmentsPlanInMonths:
+              type: number
+              example: 12
+              description: Plazo de cuotas en meses
+            commissionPercentage:
+              oneOf:
+                - type: string
+                - type: "null"
+              example: 10%
+              description: ITBMS del monto de comisión
+            commissionAmount:
+              oneOf:
+                - type: number
+                - type: "null"
+              example: 100
+              description: Monto de comisión sin ITBMS
+            commissionITBMS:
+              type: number
+              example: 7
+              description: Porcentaje de comisión
+            commissionTotalAmount:
+              oneOf:
+                - type: number
+                - type: "null"
+              example: 107
+              description: Monto total de comisión
+        createdAt:
+          type: string
+          example: 2024-02-14T12:00:00Z
+          description: Fecha de creación del desembolso
+        updatedAt:
+          type: string
+          example: 2024-02-14T12:30:00Z
+          description: Fecha de actualización del desembolso
+    GetInfoQrNoParameters:
+      type: object
+      description: Sin Header
+      properties:
+        message:
+          type: string
+          example: "Missing parameters: dataQR"
+    GetInfoQrForbidden:
+      type: object
+      description: Sin Header
+      properties:
+        message:
+          type: string
+          example: Forbidden
+    GetInfoQrDisbursementNotFound:
+      type: object
+      description: Sin Header
+      properties:
+        message:
+          type: string
+          example: Disbursement not found
+    GetInfoQrErrorConnectingDb:
+      type: object
+      description: Sin Header
+      properties:
+        message:
+          type: string
+          example: Error when connecting db
+    GetInfoQrErrorGettingQR:
+      type: object
+      description: Sin Header
+      properties:
+        message:
+          type: string
+          example: Error creating QR
+    Cancel_Qr:
+      type: object
+      required:
+        - dataQR
+      properties:
+        dataQR:
+          type: number
+          description: Código del QR generado
+    CancelQr:
+      type: object
+      description: Sin Header
+      properties:
+        message:
+          type: string
+          example: Código QR cancelado correctamente
+    CancelQrNoParameters:
+      type: object
+      description: Sin Header
+      properties:
+        message:
+          type: string
+          example: "Missing parameters: dataQR"
+    CancelQrForbidden:
+      type: object
+      description: Sin Header
+      properties:
+        message:
+          type: string
+          example: Forbidden
+    CancelQrNotFound:
+      type: object
+      description: Sin Header
+      properties:
+        message:
+          type: string
+          example: Disbursement not found
+    CancelQrErrorConnectingDb:
+      type: object
+      description: Sin Header
+      properties:
+        message:
+          type: string
+          example: Error when connecting db
+    CancelQrErrorCancellingQR:
+      type: object
+      description: Sin Header
+      properties:
+        message:
+          type: string
+          example: Error cancelling QR
+    Cancel_Credit:
+      type: object
+      required:
+        - transactionId
+      properties:
+        transactionId:
+          type: string
+          description: ID de transaction del crédito
+    CancelCredit:
+      type: object
+      description: Sin Header
+      properties:
+        transactionId:
+          type: string
+          example: 64cb0b3030b6e6d24b613553
+        message:
+          type: string
+          example: Transacción anulada exitosamente
+    CancelCreditNoParameters:
+      type: object
+      description: Sin Header
+      properties:
+        message:
+          type: string
+          example: "Parametros no encontrados: transactionId"
+    CancelCreditForbidden:
+      type: object
+      description: Sin Header
+      properties:
+        message:
+          type: string
+          example: Forbidden
+    CancelCreditNotFound:
+      type: object
+      description: Sin Header
+      properties:
+        transactionId:
+          type: string
+          example: 64cb0b3030b6e6d24b613553
+        message:
+          type: string
+          example: Transacción no encontrada
+    CancelCreditNotActive:
+      type: object
+      description: Sin Header
+      properties:
+        transactionId:
+          type: string
+          example: 64cb0b3030b6e6d24b613553
+        message:
+          type: string
+          example: El crédito asociado a la transacción no se encuentra en estado activo
+    CancelCreditHasPayments:
+      type: object
+      description: Sin Header
+      properties:
+        transactionId:
+          type: string
+          example: 64cb0b3030b6e6d24b613553
+        message:
+          type: string
+          example: El crédito asociado a la transacción tiene pagos realizados
+    CancelCreditErrorCancellingCredit:
+      type: object
+      description: Sin Header
+      properties:
+        transactionId:
+          type: string
+          example: 64cb0b3030b6e6d24b613553
+        message:
+          type: string
+          example: Error al cancelar el crédito asociado a la transacción
+  securitySchemes:
+    bearerHttpAuthentication:
+      type: http
+      scheme: Bearer
+      bearerFormat: JWT
+      description: "`JWT` Token en el header `Authorization`, el cual concede de la
+        autenticación necesaria para consumir los recursos expuestos para las
+        operaciones descritas en el API que utilicen este método de
+        autenticación."

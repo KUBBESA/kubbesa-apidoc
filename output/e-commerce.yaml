@@ -1,0 +1,280 @@
+openapi: 3.0.1
+info:
+  title: API e-Commerce
+  version: 1.0.0
+servers:
+  - url: https://api.kubbesa.net/staging
+    description: Servidor staging
+    x-displayName: staging
+paths:
+  /integrations/e-commerce/orders:
+    post:
+      tags:
+        - e-Commerce
+      summary: Crear orden
+      description: Este recurso crea una orden.
+      operationId: e-commerce-orders-create
+      requestBody:
+        $ref: "#/components/requestBodies/eCommerceOrdersCreateOrder"
+      responses:
+        "200":
+          description: Operación exitosa
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/eCommerceOrdersCreateResponse"
+                  - $ref: "#/components/schemas/eCommerceOrdersCreateResponseWithExternalMerchant"
+        "400":
+          description: Sin autenticación
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/eCommerceOrdersCreateResponse400"
+        "401":
+          description: Sin autenticación
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/eCommerceOrdersResponse401"
+        "403":
+          description: Sin autorización
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/eCommerceOrdersResponse403"
+        "500":
+          description: Error de Servidor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/eCommerceOrdersResponse500"
+      security:
+        - defaultApiKey:
+            - /integrations/e-commerce/orders:write
+  /integrations/e-commerce/orders/cancel:
+    post:
+      tags:
+        - e-Commerce
+      summary: Cancelar orden
+      description: Este recurso cancela una orden.
+      operationId: e-commerce-orders-cancel
+      requestBody:
+        $ref: "#/components/requestBodies/eCommerceOrdersCancel"
+      responses:
+        "200":
+          description: Operación exitosa
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/eCommerceOrdersCancelResponse"
+        "400":
+          description: Sin autenticación
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/eCommerceOrdersCancelResponse400"
+        "401":
+          description: Sin autenticación
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/eCommerceOrdersResponse401"
+        "403":
+          description: Sin autorización
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/eCommerceOrdersResponse403"
+        "404":
+          description: Orden no encontrada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/eCommerceOrdersResponse404"
+        "500":
+          description: Error de Servidor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/eCommerceOrdersResponse500"
+      security:
+        - defaultApiKey:
+            - /integrations/e-commerce/orders/cancel:write
+  /integrations/e-commerce/orders/status:
+    post:
+      tags:
+        - e-Commerce
+      summary: Estado de la orden
+      description: Este recurso retorna el estado de una orden.
+      operationId: e-commerce-orders-status
+      requestBody:
+        $ref: "#/components/requestBodies/eCommerceOrdersStatus"
+      responses:
+        "200":
+          description: Operación exitosa
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/eCommerceOrdersStatusResponse"
+        "400":
+          description: Sin autenticación
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/eCommerceOrdersStatusResponse400"
+        "401":
+          description: Sin autenticación
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/eCommerceOrdersResponse401"
+        "403":
+          description: Sin autorización
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/eCommerceOrdersResponse403"
+        "404":
+          description: Transacción no encontrada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/eCommerceOrdersResponse404"
+        "500":
+          description: Error de Servidor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/eCommerceOrdersResponse500"
+      security:
+        - defaultApiKey:
+            - /integrations/e-commerce/orders/status:read
+components:
+  schemas:
+    eCommerceOrdersCreateResponse:
+      type: object
+      properties:
+        commerce:
+          type: string
+          example: 123ABC
+        externalOrderId:
+          type: string
+          example: 123456-ABCDE
+        amount:
+          type: number
+          example: 100
+        status:
+          type: string
+          example: IN_PROGRESS
+        redirectUrl:
+          type: string
+          example: https://client.crediviva.com.pa/integrations/123ABC/orders/123456-ABCDE
+    eCommerceOrdersCreateResponseWithExternalMerchant:
+      type: object
+      properties:
+        commerce:
+          type: string
+          example: 123ABC
+        externalOrderId:
+          type: string
+          example: 123456-ABCDE
+        amount:
+          type: number
+          example: 100
+        status:
+          type: string
+          example: IN_PROGRESS
+        redirectUrl:
+          type: string
+          example: https://client.crediviva.com.pa/integrations/123ABC/orders/123456-ABCDE
+        externalMerchant:
+          type: string
+          example: External Merchant
+        externalMerchantImageUrl:
+          type: string
+          example: http://example.com/merchant-logo.png
+    eCommerceOrdersCreateResponse400:
+      type: object
+      properties:
+        message:
+          type: string
+          example: Parámetro externalOrderId no suministrado
+    eCommerceOrdersResponse401:
+      type: object
+      properties:
+        message:
+          type: string
+          example: API-Key no suministrado
+    eCommerceOrdersResponse403:
+      type: object
+      properties:
+        message:
+          type: string
+          example: Acceso denegado
+    eCommerceOrdersResponse500:
+      type: object
+      properties:
+        message:
+          type: string
+          example: Error de servidor
+    eCommerceOrdersCancelResponse:
+      type: object
+      properties:
+        commerce:
+          type: string
+          example: 123ABC
+        externalOrderId:
+          type: string
+          example: 123456-ABCDE
+        amount:
+          type: number
+          example: 100
+        status:
+          type: string
+          example: CANCELLED
+        cancelledBy:
+          type: string
+          example: E-COMMERCE
+    eCommerceOrdersCancelResponse400:
+      type: object
+      properties:
+        message:
+          type: string
+          example: Parámetro externalOrderId no suministrado
+    eCommerceOrdersResponse404:
+      type: object
+      properties:
+        message:
+          type: string
+          example: Orden no encontrada
+    eCommerceOrdersStatusResponse:
+      type: object
+      properties:
+        externalOrderId:
+          type: string
+          example: 123456-ABCDE
+        status:
+          type: string
+          enum:
+            - ACTIVE
+            - APPROVED
+            - CANCELLED
+            - EXPIRED
+            - IN_PROGRESS
+            - REJECTED
+    eCommerceOrdersStatusResponse400:
+      type: object
+      properties:
+        message:
+          type: string
+          example: Parámetro externalOrderId no suministrado
+  securitySchemes:
+    defaultApiKey:
+      description: >
+        API-Key suministrado por Crediviva, el cual concede de la autenticación
+        necesaria para consumir los recursos expuestos para las operaciones
+        descritas en el API que utilicen este método de autenticación.
+      type: apiKey
+      name: x-api-key
+      in: header

@@ -1,0 +1,161 @@
+openapi: 3.0.1
+info:
+  title: API RED DIGITAL
+  version: 1.0.0
+servers:
+  - url: https://api.kubbesa.net/staging
+    description: Servidor staging
+    x-displayName: staging
+paths:
+  /red-digital/create-qr:
+    post:
+      tags:
+        - RED DIGITAL
+      summary: Generar código QR
+      description: Genera el código qr que será escaneado por el cliente
+      operationId: red-digital-create-qr-code
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Create_Qr_Code_Red_Digital"
+      security:
+        - defaultApiKey:
+            - /red-digital/create-qr:write
+      responses:
+        "200":
+          description: Operación exitosa
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateQrCodeRedDigital"
+        "400":
+          description: No se ha proporcionado los parametros correspondientes
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateQrCodeNoParametersRedDigital"
+        "403":
+          description: Sin permisos para acceder al recurso
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateQrCodeForbiddenRedDigital"
+        "404":
+          description: Recurso no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateQrCodeCommerceNotFoundRedDigital"
+        "422":
+          description: Error al procesar la solicitud
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateQrCodeErrorTransactionAmountRedDigital"
+        "500":
+          description: Error al realizar la solicitud
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/CreateQrCodeErrorConnectingDbRedDigital"
+                  - $ref: "#/components/schemas/CreateQrCodeErrorCreatingQRRedDigital"
+components:
+  schemas:
+    Create_Qr_Code_Red_Digital:
+      type: object
+      required:
+        - amount
+        - lineas
+        - metaData
+        - commerceId
+        - deviceId
+      properties:
+        amount:
+          type: number
+          description: Monto de la compra
+        lineas:
+          type: array
+          items:
+            type: string
+          description: Descripción del producto comprado
+          example:
+            - CELULARES
+            - COMPUTADORAS
+            - LINEA BLANCA
+            - ELECTRODOMÉSTICOS
+            - INDUMENTARIA
+            - CALZADO
+        commerceId:
+          type: string
+          example: "123456"
+          description: Código del comercio mapeado en el pos
+        deviceId:
+          type: string
+          example: 2fa24asz212
+          description: Identificador del pos
+        metaData:
+          type: object
+          example: '{"name":"John","lastName":"Doe","email":"john-doe@gmail.com"}'
+          description: Información adicional útil para identificar al usuario que efectúa
+            la transacción. No se limita a los ejemplos proporcionados.
+    CreateQrCodeRedDigital:
+      type: object
+      description: Sin Header
+      properties:
+        dataQR:
+          type: number
+          example: "503212"
+          description: Código generado para ser escaneado en el qr
+    CreateQrCodeNoParametersRedDigital:
+      type: object
+      description: Sin Header
+      properties:
+        message:
+          type: string
+          example: "Missing parameters: amount"
+    CreateQrCodeForbiddenRedDigital:
+      type: object
+      description: Sin Header
+      properties:
+        message:
+          type: string
+          example: Forbidden
+    CreateQrCodeCommerceNotFoundRedDigital:
+      type: object
+      description: Sin Header
+      properties:
+        message:
+          type: string
+          example: Commerce not found
+    CreateQrCodeErrorTransactionAmountRedDigital:
+      type: object
+      description: Sin Header
+      properties:
+        message:
+          type: string
+          example: Transaction amount must be greater than zero
+    CreateQrCodeErrorConnectingDbRedDigital:
+      type: object
+      description: Sin Header
+      properties:
+        message:
+          type: string
+          example: Error when connecting db
+    CreateQrCodeErrorCreatingQRRedDigital:
+      type: object
+      description: Sin Header
+      properties:
+        message:
+          type: string
+          example: Error creating QR
+  securitySchemes:
+    defaultApiKey:
+      description: >
+        API-Key suministrado por Crediviva, el cual concede de la autenticación
+        necesaria para consumir los recursos expuestos para las operaciones
+        descritas en el API que utilicen este método de autenticación.
+      type: apiKey
+      name: x-api-key
+      in: header

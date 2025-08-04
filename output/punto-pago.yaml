@@ -1,0 +1,477 @@
+openapi: 3.0.1
+info:
+  title: API PUNTO PAGO
+  version: 1.0.0
+servers:
+  - url: https://api.kubbesa.net/staging
+    description: Servidor staging
+    x-displayName: staging
+paths:
+  /integrations/payment/get-balance/punto-pago:
+    post:
+      tags:
+        - PUNTO PAGO
+      summary: Obtener saldo del cliente
+      description: Obtiene el saldo asociado al cliente
+      operationId: get-balance-punto-pago
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Get_Balance_Punto_Pago"
+      security:
+        - defaultApiKey:
+            - /integrations/payment/get-balance/punto-pago:read
+      responses:
+        "200":
+          description: Operación exitosa
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/GetBalancePuntoPago"
+                  - $ref: "#/components/schemas/GetBalanceAlreadyPaidPuntoPago"
+                  - $ref: "#/components/schemas/GetBalanceWriteOffPuntoPago"
+                  - $ref: "#/components/schemas/GetBalanceNoIdNumberPuntoPago"
+                  - $ref: "#/components/schemas/GetBalanceForbiddenPuntoPago"
+                  - $ref: "#/components/schemas/GetBalanceErrorConnectingDbPuntoPago"
+                  - $ref: "#/components/schemas/GetBalanceUserNotFoundPuntoPago"
+                  - $ref: "#/components/schemas/GetBalanceCreditNotFoundPuntoPago"
+                  - $ref: "#/components/schemas/GetBalanceInstallmentsNotFoundPuntoPago"
+  /integrations/payment/make-payment/punto-pago:
+    post:
+      tags:
+        - PUNTO PAGO
+      summary: Realizar un pago
+      description: Procesa un pago asociado al cliente
+      operationId: make-payment-punto-pago
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Make_Payment_Punto_Pago"
+      security:
+        - defaultApiKey:
+            - /integrations/payment/make-payment/punto-pago:write
+      responses:
+        "200":
+          description: Operación exitosa
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/MakePaymentPuntoPago"
+                  - $ref: "#/components/schemas/MakePaymentErroConnectingDbPuntoPago"
+                  - $ref: "#/components/schemas/MakePaymentErroGettingReceiptPuntoPago"
+                  - $ref: "#/components/schemas/MakePaymentErroSendingEmailPuntoPago"
+                  - $ref: "#/components/schemas/MakePaymentErroMakingPaymentPuntoPago"
+                  - $ref: "#/components/schemas/MakePaymentErroGettingTransactionPuntoPago"
+                  - $ref: "#/components/schemas/MakePaymentNoParametersPuntoPago"
+                  - $ref: "#/components/schemas/MakePaymentForbiddenPuntoPago"
+                  - $ref: "#/components/schemas/MakePaymentUserNotFoundPuntoPago"
+                  - $ref: "#/components/schemas/MakePaymentCreditNotFoundPuntoPago"
+                  - $ref: "#/components/schemas/MakePaymentErroTransactionAmountPuntoPago"
+components:
+  schemas:
+    Get_Balance_Punto_Pago:
+      type: object
+      required:
+        - idNumber
+      properties:
+        idNumber:
+          type: string
+          description: formato X-XXX-XXXX
+    GetBalancePuntoPago:
+      type: object
+      properties:
+        statusCode:
+          type: number
+          description: Código devuelto por el servicio
+          example: 200
+        name:
+          type: string
+          description: Nombre del cliente
+          example: John Doe
+        idNumber:
+          type: string
+          description: Número de identificación del cliente
+          example: 1-2345-5678
+        loanId:
+          type: number
+          description: Identificador único del crédito
+          example: 123456
+        creditNumber:
+          type: number
+          description: Número único del crédito
+          example: 654321
+        installmentNumber:
+          type: number
+          description: Plazo correspondiente a la cuota
+          example: 1
+        biweeklyInstallment:
+          type: number
+          description: Monto inicial de la cuota
+          example: 100
+        amountPaid:
+          type: number
+          description: Monto pagado hasta el momento de la cuota
+          example: 25
+        remainingAmount:
+          type: number
+          description: Deuda pendiente de la cuota
+          example: 75
+        totalDebtOutstanding:
+          type: number
+          description: Deuda total acumulada
+          example: 1000
+        dueDate:
+          type: string
+          description: Fecha en la que la cuota vence
+          example: 31/7/2024
+        prepaymentAmount:
+          type: number
+          description: Monto de precancelación
+          example: 700
+        totalOverdue:
+          type: number
+          description: Monto total atrasado
+          example: 100
+        writtenOff:
+          type: boolean
+          description: Indicador de crédito castigado
+          example: false
+    GetBalanceAlreadyPaidPuntoPago:
+      type: object
+      properties:
+        statusCode:
+          type: number
+          description: Código devuelto por el servicio
+          example: 200
+        idNumber:
+          type: string
+          description: Número de identificación del cliente
+          example: 1-2345-5678
+        loanId:
+          type: number
+          description: Identificador único del crédito
+          example: 123456
+        creditNumber:
+          type: number
+          description: Número único del crédito
+          example: 654321
+        message:
+          type: string
+          example: Credit fully paid
+    GetBalanceWriteOffPuntoPago:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Nombre del cliente
+          example: John Doe
+        idNumber:
+          type: string
+          description: Número de identificación del cliente
+          example: 1-2345-5678
+        loanId:
+          type: number
+          description: Identificador único del crédito
+          example: 123456
+        creditNumber:
+          type: number
+          description: Número único del crédito
+          example: 654321
+        installmentNumber:
+          type: number
+          description: Plazo correspondiente a la cuota
+          example: 1
+        biweeklyInstallment:
+          type: number
+          description: Monto quincenal de la cuota
+          example: 100
+        totalDebtOutstanding:
+          type: number
+          description: Deuda total acumulada
+          example: 1000
+        writtenOff:
+          type: boolean
+          description: Indicador de crédito castigado
+          example: true
+    GetBalanceNoIdNumberPuntoPago:
+      type: object
+      description: Sin Header
+      properties:
+        statusCode:
+          type: number
+          description: Código devuelto por el servicio
+          example: 400
+        message:
+          type: string
+          example: IdNumber is missing
+    GetBalanceForbiddenPuntoPago:
+      type: object
+      description: Sin Header
+      properties:
+        statusCode:
+          type: number
+          description: Código devuelto por el servicio
+          example: 403
+        message:
+          type: string
+          example: Forbidden
+    GetBalanceErrorConnectingDbPuntoPago:
+      type: object
+      description: Sin Header
+      properties:
+        statusCode:
+          type: number
+          description: Código devuelto por el servicio
+          example: 500
+        message:
+          type: string
+          example: Error when connecting db
+    GetBalanceUserNotFoundPuntoPago:
+      type: object
+      description: Sin Header
+      properties:
+        statusCode:
+          type: number
+          description: Código devuelto por el servicio
+          example: 404
+        idNumber:
+          type: string
+          description: Número de identificación del cliente
+          example: 1-2345-5678
+        message:
+          type: string
+          example: User not found
+    GetBalanceCreditNotFoundPuntoPago:
+      type: object
+      description: Sin Header
+      properties:
+        statusCode:
+          type: number
+          description: Código devuelto por el servicio
+          example: 404
+        idNumber:
+          type: string
+          description: Número de identificación del cliente
+          example: 1-2345-5678
+        message:
+          type: string
+          example: Credit not found
+    GetBalanceInstallmentsNotFoundPuntoPago:
+      type: object
+      description: Sin Header
+      properties:
+        statusCode:
+          type: number
+          description: Código devuelto por el servicio
+          example: 404
+        idNumber:
+          type: string
+          description: Número de identificación del cliente
+          example: 1-2345-5678
+        message:
+          type: string
+          example: Installments not found
+    Make_Payment_Punto_Pago:
+      type: object
+      required:
+        - creditId
+        - transactionAmount
+      properties:
+        creditId:
+          type: number
+          description: ID del crédito
+          example: 12345
+        transactionAmount:
+          type: number
+          description: Monto de la transacción
+          example: 100.5
+        puntoPagoId:
+          type: string
+          description: ID de transacción Punto Pago
+          example: 60b7509715a82214
+    MakePaymentPuntoPago:
+      type: object
+      description: Sin Header
+      properties:
+        statusCode:
+          type: number
+          description: Código devuelto por el servicio
+          example: 200
+        receiptResponse:
+          type: object
+          properties:
+            payment_date:
+              type: string
+              example: 12/28/2023, 9:47:58 a. m.
+              description: Fecha y hora del pago.
+            collection_office:
+              type: string
+              example: PUNTO PAGO
+              description: Oficina de cobro asociada al pago.
+            customer_name:
+              type: string
+              example: Pepito Flores
+              description: Nombre completo del cliente.
+            id_number:
+              type: string
+              example: 9-229-1200
+              description: Número de identificación del cliente.
+            credit_number:
+              type: number
+              example: 200231
+              description: Número de crédito asociado al pago.
+            transaction_number:
+              type: string
+              example: 60b7509715a82214
+              description: Número de transacción del pago.
+            payment_method:
+              type: string
+              example: PUNTO PAGO
+              description: Método de pago utilizado.
+            cashier_id:
+              type: string
+              example: N/A
+              description: Identificación del cajero que procesó el pago.
+            total_payment:
+              type: number
+              example: 20.1
+              description: Monto total del pago realizado.
+            total_obligation_at_start:
+              type: number
+              example: 300
+              description: Obligación total al inicio del proceso de pago.
+            total_obligation_before_payment:
+              type: number
+              example: 219
+              description: Obligación total antes del pago.
+            total_obligation_after_payment:
+              type: number
+              example: 218.9
+              description: Obligación total después del pago.
+            total_obligation_if_pre_cancelled:
+              type: number
+              example: 218.9
+              description: Obligación total si se cancela antes del pago.
+    MakePaymentErroConnectingDbPuntoPago:
+      type: object
+      description: Sin Header
+      properties:
+        statusCode:
+          type: number
+          description: Código devuelto por el servicio
+          example: 500
+        message:
+          type: string
+          example: Error when connecting db
+    MakePaymentErroGettingReceiptPuntoPago:
+      type: object
+      description: Sin Header
+      properties:
+        statusCode:
+          type: number
+          description: Código devuelto por el servicio
+          example: 500
+        message:
+          type: string
+          example: Error getting receipt
+    MakePaymentErroSendingEmailPuntoPago:
+      type: object
+      description: Sin Header
+      properties:
+        statusCode:
+          type: number
+          description: Código devuelto por el servicio
+          example: 500
+        message:
+          type: string
+          example: Error sending email
+    MakePaymentErroMakingPaymentPuntoPago:
+      type: object
+      description: Sin Header
+      properties:
+        statusCode:
+          type: number
+          description: Código devuelto por el servicio
+          example: 500
+        message:
+          type: string
+          example: Error making payment
+    MakePaymentErroGettingTransactionPuntoPago:
+      type: object
+      description: Sin Header
+      properties:
+        statusCode:
+          type: number
+          description: Código devuelto por el servicio
+          example: 500
+        message:
+          type: string
+          example: Error getting transaction
+    MakePaymentNoParametersPuntoPago:
+      type: object
+      description: Sin Header
+      properties:
+        statusCode:
+          type: number
+          description: Código devuelto por el servicio
+          example: 400
+        message:
+          type: string
+          example: "Missing parameters: parameters"
+    MakePaymentForbiddenPuntoPago:
+      type: object
+      description: Sin Header
+      properties:
+        statusCode:
+          type: number
+          description: Código devuelto por el servicio
+          example: 403
+        message:
+          type: string
+          example: Forbidden
+    MakePaymentUserNotFoundPuntoPago:
+      type: object
+      description: Sin Header
+      properties:
+        statusCode:
+          type: number
+          description: Código devuelto por el servicio
+          example: 404
+        message:
+          type: string
+          example: User not found
+    MakePaymentCreditNotFoundPuntoPago:
+      type: object
+      description: Sin Header
+      properties:
+        statusCode:
+          type: number
+          description: Código devuelto por el servicio
+          example: 404
+        message:
+          type: string
+          example: Credit not found
+    MakePaymentErroTransactionAmountPuntoPago:
+      type: object
+      description: Sin Header
+      properties:
+        statusCode:
+          type: number
+          description: Código devuelto por el servicio
+          example: 422
+        message:
+          type: string
+          example: Transaction amount must be greater than zero
+  securitySchemes:
+    defaultApiKey:
+      description: >
+        API-Key suministrado por Crediviva, el cual concede de la autenticación
+        necesaria para consumir los recursos expuestos para las operaciones
+        descritas en el API que utilicen este método de autenticación.
+      type: apiKey
+      name: x-api-key
+      in: header
