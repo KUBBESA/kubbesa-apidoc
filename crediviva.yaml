@@ -158,7 +158,7 @@ paths:
             schema:
               $ref: "#/components/schemas/Get_Balance"
       security:
-        - defaultApiKey:
+        - bearerHttpAuthentication:
             - "/api-caja/get-balance:read"
         - defaultApiKey:
             - "/api-caja/get-balance:read"
@@ -207,7 +207,7 @@ paths:
       description: Obtiene la lista de métodos de pago disponibles
       operationId: get-payment-methods
       security:
-        - defaultApiKey:
+        - bearerHttpAuthentication:
             - "/api-caja/get-payment-methods:read"
         - defaultApiKey:
             - "/api-caja/get-payment-methods:read"
@@ -243,7 +243,7 @@ paths:
             schema:
               $ref: "#/components/schemas/Make_Payment"
       security:
-        - defaultApiKey:
+        - bearerHttpAuthentication:
             - "/api-caja/make-payment:write"
         - defaultApiKey:
             - "/api-caja/make-payment:write"
@@ -568,6 +568,7 @@ paths:
                 oneOf:
                   - $ref: "#/components/schemas/CancelCreditNotActive"
                   - $ref: "#/components/schemas/CancelCreditHasPayments"
+                  - $ref: "#/components/schemas/CancelCreditTopup"
         "500":
           description: Error al cancelar la transacción
           content:
@@ -2293,6 +2294,10 @@ components:
           type: string
           description: Número de identificación del cliente
           example: "1-2345-5678"
+        name:
+          type: string
+          description: Nombre del cliente
+          example: "John Doe"
         loanId:
           type: number
           description: Identificador único del crédito
@@ -2391,6 +2396,10 @@ components:
           type: string
           description: Número de identificación del cliente
           example: "1-2345-5678"
+        name:
+          type: string
+          description: Nombre del cliente
+          example: "John Doe"
         loanId:
           type: number
           description: Identificador único del crédito
@@ -2431,6 +2440,10 @@ components:
           type: string
           description: Número de identificación del cliente
           example: "1-2345-5678"
+        name:
+          type: string
+          description: Nombre del cliente
+          example: "John Doe"
         loanId:
           type: number
           description: Identificador único del crédito
@@ -3275,6 +3288,17 @@ components:
         message:
           type: string
           example: "El crédito asociado a la transacción tiene pagos realizados"
+    CancelCreditTopup:
+      type: object
+      description: Retanqueo - Código QR no puede ser cancelado via API
+      properties:
+        transactionId:
+          description: ID único de transacción
+          type: string
+          example: 64cb0b3030b6e6d24b613553
+        message:
+          type: string
+          example: "El crédito actual corresponde a un retanqueo. Por favor, comuníquese con el soporte de Crediviva para continuar con esta solicitud."
     CancelCreditErrorCancellingCredit:
       type: object
       description: Sin Header
